@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { setupAuth } from "./auth";
 import { 
   insertAppointmentSchema, 
   insertCustomerSchema, 
@@ -14,6 +15,9 @@ import { z } from "zod";
 import { format } from "date-fns";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication
+  setupAuth(app);
+  
   // Financial data endpoint
   app.get("/api/financial-data", async (req: Request, res: Response) => {
     try {

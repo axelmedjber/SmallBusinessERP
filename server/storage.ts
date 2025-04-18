@@ -1,4 +1,5 @@
 import { db } from './db';
+import { pool } from './db';
 import { 
   User, InsertUser, 
   FinancialData, InsertFinancialData,
@@ -14,8 +15,13 @@ import {
   customers, invoices, invoiceItems, inventoryCategories, inventoryItems
 } from "@shared/schema";
 import { eq, and, like, desc, asc, sql, or } from 'drizzle-orm';
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 
 export interface IStorage {
+  // Session storage for authentication
+  sessionStore: session.Store;
+  
   // User
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
