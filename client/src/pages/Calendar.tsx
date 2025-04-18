@@ -10,13 +10,16 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppointmentDialog from '@/components/calendar/AppointmentDialog';
 
-// Define appointment type
+// Define appointment type to match our database schema
 interface Appointment {
   id: number;
   title: string;
-  startTime: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:MM
   duration: number;
   description: string;
+  colorCode?: string;
+  createdAt?: string;
 }
 
 const Calendar = () => {
@@ -49,15 +52,18 @@ const Calendar = () => {
   
   // Get appointments for a specific day
   const getAppointmentsForDay = (day: Date) => {
+    const formattedDay = format(day, 'yyyy-MM-dd');
     return appointments.filter(appointment => {
-      const appointmentDate = new Date(appointment.startTime);
-      return isSameDay(appointmentDate, day);
+      return appointment.date === formattedDay;
     });
   };
   
   // Format appointment time
   const formatAppointmentTime = (timeString: string) => {
-    const date = new Date(timeString);
+    // Time is already in HH:MM format, so we need to parse it
+    const [hours, minutes] = timeString.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes);
     return format(date, 'h:mm a');
   };
   
@@ -128,14 +134,14 @@ const Calendar = () => {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="bg-blue-100 text-blue-800 text-xs p-1 rounded truncate cursor-pointer">
-                              {formatAppointmentTime(appointment.startTime)}: {appointment.title}
+                              {formatAppointmentTime(appointment.time)}: {appointment.title}
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
                             <div className="space-y-1">
                               <p className="font-medium">{appointment.title}</p>
                               <p className="text-xs">
-                                {formatAppointmentTime(appointment.startTime)} ({appointment.duration} min)
+                                {formatAppointmentTime(appointment.time)} ({appointment.duration} min)
                               </p>
                               {appointment.description && (
                                 <p className="text-xs">{appointment.description}</p>

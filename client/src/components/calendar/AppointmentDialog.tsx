@@ -62,14 +62,11 @@ const AppointmentDialog = () => {
   // Mutation for creating appointment
   const { mutate: createAppointment, isPending } = useMutation({
     mutationFn: async (data: AppointmentData) => {
-      // Format date and time for API
-      const formattedDate = data.date;
-      const dateTime = `${formattedDate}T${data.startTime}:00`;
-      
-      // Prepare payload
+      // Prepare payload directly matching the database schema
       const payload = {
         title: data.title,
-        startTime: dateTime,
+        date: data.date,
+        time: data.time,
         duration: data.duration,
         description: data.description
       };
@@ -187,8 +184,8 @@ const AppointmentDialog = () => {
                 <Input
                   id="time"
                   type="time"
-                  value={appointment.startTime}
-                  onChange={(e) => handleChange('startTime', e.target.value)}
+                  value={appointment.time}
+                  onChange={(e) => handleChange('time', e.target.value)}
                   required
                 />
               </div>
