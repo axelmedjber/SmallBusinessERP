@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { formatCurrency } from '@/lib/utils';
 import { ArrowUpRight, ArrowDownRight, AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 // Financial health interface
@@ -12,17 +11,12 @@ interface FinancialHealthData {
   score: number;
   category: string;
   metrics: {
-    profitability: {
+    profitMargin: {
       score: number;
       value: number;
       maxScore: number;
     };
-    liquidity: {
-      score: number;
-      value: number;
-      maxScore: number;
-    };
-    efficiency: {
+    revenueGrowth: {
       score: number;
       value: number;
       maxScore: number;
@@ -168,82 +162,55 @@ const FinancialHealth = () => {
       
       {/* Detailed Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Profitability */}
+        {/* Profit Margin */}
         <Card>
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
-              <CardTitle className="text-lg">Profitability</CardTitle>
-              {getStatusIcon(metrics.profitability.score, metrics.profitability.maxScore)}
+              <CardTitle className="text-lg">Profit Margin</CardTitle>
+              {getStatusIcon(metrics.profitMargin.score, metrics.profitMargin.maxScore)}
             </div>
           </CardHeader>
           <CardContent>
             <div className="flex justify-between items-center mb-2">
               <div className="font-semibold">
-                <span className={getScoreColor(metrics.profitability.score, metrics.profitability.maxScore)}>
-                  {metrics.profitability.score}
+                <span className={getScoreColor(metrics.profitMargin.score, metrics.profitMargin.maxScore)}>
+                  {metrics.profitMargin.score}
                 </span>
-                <span className="text-gray-500"> / {metrics.profitability.maxScore}</span>
+                <span className="text-gray-500"> / {metrics.profitMargin.maxScore}</span>
               </div>
               <div className="text-sm">
-                Profit Margin: {formatPercentage(metrics.profitability.value)}
+                Value: {formatPercentage(metrics.profitMargin.value)}
               </div>
             </div>
             <Progress 
-              value={(metrics.profitability.score / metrics.profitability.maxScore) * 100} 
+              value={(metrics.profitMargin.score / metrics.profitMargin.maxScore) * 100} 
               className="h-2" 
             />
           </CardContent>
         </Card>
         
-        {/* Liquidity */}
+        {/* Revenue Growth */}
         <Card>
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
-              <CardTitle className="text-lg">Liquidity</CardTitle>
-              {getStatusIcon(metrics.liquidity.score, metrics.liquidity.maxScore)}
+              <CardTitle className="text-lg">Revenue Growth</CardTitle>
+              {getStatusIcon(metrics.revenueGrowth.score, metrics.revenueGrowth.maxScore)}
             </div>
           </CardHeader>
           <CardContent>
             <div className="flex justify-between items-center mb-2">
               <div className="font-semibold">
-                <span className={getScoreColor(metrics.liquidity.score, metrics.liquidity.maxScore)}>
-                  {metrics.liquidity.score}
+                <span className={getScoreColor(metrics.revenueGrowth.score, metrics.revenueGrowth.maxScore)}>
+                  {metrics.revenueGrowth.score}
                 </span>
-                <span className="text-gray-500"> / {metrics.liquidity.maxScore}</span>
+                <span className="text-gray-500"> / {metrics.revenueGrowth.maxScore}</span>
               </div>
               <div className="text-sm">
-                Current Ratio: {metrics.liquidity.value.toFixed(2)}
+                Value: {formatPercentage(metrics.revenueGrowth.value)}
               </div>
             </div>
             <Progress 
-              value={(metrics.liquidity.score / metrics.liquidity.maxScore) * 100} 
-              className="h-2" 
-            />
-          </CardContent>
-        </Card>
-        
-        {/* Efficiency */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-lg">Operational Efficiency</CardTitle>
-              {getStatusIcon(metrics.efficiency.score, metrics.efficiency.maxScore)}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-between items-center mb-2">
-              <div className="font-semibold">
-                <span className={getScoreColor(metrics.efficiency.score, metrics.efficiency.maxScore)}>
-                  {metrics.efficiency.score}
-                </span>
-                <span className="text-gray-500"> / {metrics.efficiency.maxScore}</span>
-              </div>
-              <div className="text-sm">
-                Asset Turnover: {metrics.efficiency.value.toFixed(2)}x
-              </div>
-            </div>
-            <Progress 
-              value={(metrics.efficiency.score / metrics.efficiency.maxScore) * 100} 
+              value={(metrics.revenueGrowth.score / metrics.revenueGrowth.maxScore) * 100} 
               className="h-2" 
             />
           </CardContent>
@@ -266,7 +233,7 @@ const FinancialHealth = () => {
                 <span className="text-gray-500"> / {metrics.expenseManagement.maxScore}</span>
               </div>
               <div className="text-sm">
-                Expense Ratio: {formatPercentage(metrics.expenseManagement.value)}
+                Value: {formatPercentage(metrics.expenseManagement.value)}
               </div>
             </div>
             <Progress 
@@ -293,7 +260,7 @@ const FinancialHealth = () => {
                 <span className="text-gray-500"> / {metrics.inventoryHealth.maxScore}</span>
               </div>
               <div className="text-sm">
-                Stock Level Health: {formatPercentage(metrics.inventoryHealth.value)}
+                Value: {formatPercentage(metrics.inventoryHealth.value)}
               </div>
             </div>
             <Progress 
@@ -320,7 +287,7 @@ const FinancialHealth = () => {
                 <span className="text-gray-500"> / {metrics.accountsReceivable.maxScore}</span>
               </div>
               <div className="text-sm">
-                Overdue Ratio: {formatPercentage(metrics.accountsReceivable.value)}
+                Value: {formatPercentage(metrics.accountsReceivable.value)}
               </div>
             </div>
             <Progress 
