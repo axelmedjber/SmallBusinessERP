@@ -1,6 +1,7 @@
 import { db } from './db';
 import { 
-  users, financialData, monthlyData, expenseCategories, appointments 
+  users, financialData, monthlyData, expenseCategories, appointments,
+  customers, invoices, invoiceItems, inventoryCategories, inventoryItems
 } from '@shared/schema';
 
 /**
