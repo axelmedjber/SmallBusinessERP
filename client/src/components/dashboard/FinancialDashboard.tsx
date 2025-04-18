@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLanguage } from "@/hooks/use-language";
+import { useLanguage } from "../../App";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { translations } from "@/lib/utils";
 import { PeriodType } from "@/lib/types";
