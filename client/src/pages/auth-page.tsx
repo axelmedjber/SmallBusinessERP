@@ -18,6 +18,13 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from "@/hooks/use-language";
 import { insertUserSchema } from "@shared/schema";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -212,6 +219,28 @@ export default function AuthPage() {
                     {registerForm.formState.errors.confirmPassword && (
                       <p className="text-sm text-red-500">
                         {registerForm.formState.errors.confirmPassword.message}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="register-role">Role</Label>
+                    <Select 
+                      defaultValue="employee"
+                      onValueChange={(value) => registerForm.setValue("role", value as "admin" | "manager" | "employee")}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="employee">Employee</SelectItem>
+                        <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="admin">Administrator</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {registerForm.formState.errors.role && (
+                      <p className="text-sm text-red-500">
+                        {registerForm.formState.errors.role.message}
                       </p>
                     )}
                   </div>
