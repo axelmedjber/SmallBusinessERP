@@ -94,6 +94,17 @@ export interface IStorage {
 
 // Database storage implementation
 export class DatabaseStorage implements IStorage {
+  // Session store for authentication
+  sessionStore: session.Store;
+  
+  constructor() {
+    const PgSession = connectPgSimple(session);
+    this.sessionStore = new PgSession({
+      pool,
+      createTableIfMissing: true
+    });
+  }
+  
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));

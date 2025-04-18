@@ -1,7 +1,7 @@
 import { createContext, ReactNode, useContext } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { User, InsertUser } from "@shared/schema"; 
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 type AuthContextType = {
@@ -23,19 +23,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     error,
     isLoading,
-  } = useQuery<User | undefined, Error>({
+  } = useQuery<User | null, Error>({
     queryKey: ["/api/user"],
-    queryFn: async ({ signal }) => {
-      try {
-        const res = await fetch("/api/user", { signal });
-        if (res.status === 401) return undefined;
-        if (!res.ok) throw new Error("Failed to fetch user data");
-        return await res.json();
-      } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") return undefined;
-        throw err;
-      }
-    },
+    queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
   const loginMutation = useMutation({
