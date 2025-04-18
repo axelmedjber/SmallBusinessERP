@@ -1,72 +1,277 @@
 import React from "react";
-import { Route, Switch } from "wouter";
+import { Route, Switch, Link } from "wouter";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 import FinancialHealth from "./pages/FinancialHealth";
+import AuthPage from "./pages/auth-page";
 import NotFound from "./pages/not-found";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { useLanguage } from "@/hooks/use-language";
+import { AuthProvider } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetDescription, 
+  SheetHeader, 
+  SheetTitle, 
+  SheetTrigger 
+} from "@/components/ui/sheet";
+import { 
+  Home, 
+  Calendar as CalendarIcon, 
+  TrendingUp, 
+  Menu, 
+  Users, 
+  FileText, 
+  Package, 
+  Settings, 
+  LogOut, 
+  User,
+  ChevronDown 
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Main App component with routing
 function App() {
   return (
-    <LanguageProvider>
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        <div className="w-full max-w-6xl mx-auto bg-white shadow-lg rounded-lg p-8 my-8">
-          <Header />
-          <div className="mt-6">
-            <Switch>
-              <Route path="/" component={Dashboard} />
-              <Route path="/calendar" component={Calendar} />
-              <Route path="/financial-health" component={FinancialHealth} />
-              <Route component={NotFound} />
-            </Switch>
+    <AuthProvider>
+      <LanguageProvider>
+        <div className="min-h-screen flex flex-col bg-gray-50">
+          <div className="w-full max-w-6xl mx-auto bg-white shadow-lg rounded-lg p-4 sm:p-8 my-8">
+            <Header />
+            <div className="mt-6">
+              <Switch>
+                <Route path="/auth" component={AuthPage} />
+                <ProtectedRoute path="/" component={Dashboard} />
+                <ProtectedRoute path="/calendar" component={Calendar} />
+                <ProtectedRoute path="/financial-health" component={FinancialHealth} />
+                <ProtectedRoute path="/customers" component={Dashboard} roles={["admin", "manager"]} />
+                <ProtectedRoute path="/invoices" component={Dashboard} roles={["admin", "manager", "employee"]} />
+                <ProtectedRoute path="/inventory" component={Dashboard} roles={["admin", "manager"]} />
+                <ProtectedRoute path="/settings" component={Dashboard} roles={["admin"]} />
+                <Route component={NotFound} />
+              </Switch>
+            </div>
           </div>
         </div>
-      </div>
-    </LanguageProvider>
+      </LanguageProvider>
+    </AuthProvider>
   );
 }
 
 // Header with navigation
 function Header() {
   const { t, language, direction } = useLanguage();
+  const { user, logoutMutation } = useAuth();
+  
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
+  
+  const getUserInitials = () => {
+    if (!user) return "?";
+    if (user.fullName) {
+      const names = user.fullName.split(" ");
+      if (names.length > 1) {
+        return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+      }
+      return user.fullName.slice(0, 2).toUpperCase();
+    }
+    return user.username.slice(0, 2).toUpperCase();
+  };
   
   return (
-    <div className={`text-center ${direction === 'rtl' ? 'text-right' : 'text-left'}`}>
-      <h1 className="text-3xl font-bold mb-6">{t.title}</h1>
-      
+    <div className={`${direction === 'rtl' ? 'text-right' : 'text-left'}`}>
       <div className="flex justify-between items-center border-b pb-4 mb-4">
-        <div>
-          <p className="mb-1">
-            <strong>Language:</strong> {language}
-          </p>
-          <p className="mb-1">
-            <strong>Direction:</strong> {direction}
-          </p>
+        <div className="flex items-center">
+          <h1 className="text-2xl sm:text-3xl font-bold mr-6">{t.title}</h1>
+          
+          {/* Desktop Navigation */}
+          {user && (
+            <nav className="hidden md:flex space-x-4">
+              <Link href="/">
+                <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                  <Home className="w-4 h-4 mr-2" />
+                  {t.dashboard}
+                </a>
+              </Link>
+              <Link href="/calendar">
+                <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                  <CalendarIcon className="w-4 h-4 mr-2" />
+                  {t.calendar}
+                </a>
+              </Link>
+              <Link href="/financial-health">
+                <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  {t.financialHealth}
+                </a>
+              </Link>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="px-3 py-2 text-sm font-medium">
+                    More <ChevronDown className="w-4 h-4 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <Link href="/customers">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Users className="w-4 h-4 mr-2" />
+                      Customers
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/invoices">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Invoices
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/inventory">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Package className="w-4 h-4 mr-2" />
+                      Inventory
+                    </DropdownMenuItem>
+                  </Link>
+                  {user?.role === "admin" && (
+                    <Link href="/settings">
+                      <DropdownMenuItem className="cursor-pointer">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Settings
+                      </DropdownMenuItem>
+                    </Link>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </nav>
+          )}
+          
+          {/* Mobile Navigation */}
+          {user && (
+            <div className="md:hidden">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left">
+                  <SheetHeader>
+                    <SheetTitle>{t.title}</SheetTitle>
+                    <SheetDescription>Navigation Menu</SheetDescription>
+                  </SheetHeader>
+                  <div className="py-4">
+                    <nav className="flex flex-col space-y-3">
+                      <Link href="/">
+                        <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                          <Home className="w-4 h-4 mr-2" />
+                          {t.dashboard}
+                        </a>
+                      </Link>
+                      <Link href="/calendar">
+                        <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                          <CalendarIcon className="w-4 h-4 mr-2" />
+                          {t.calendar}
+                        </a>
+                      </Link>
+                      <Link href="/financial-health">
+                        <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                          <TrendingUp className="w-4 h-4 mr-2" />
+                          {t.financialHealth}
+                        </a>
+                      </Link>
+                      <Link href="/customers">
+                        <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                          <Users className="w-4 h-4 mr-2" />
+                          Customers
+                        </a>
+                      </Link>
+                      <Link href="/invoices">
+                        <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                          <FileText className="w-4 h-4 mr-2" />
+                          Invoices
+                        </a>
+                      </Link>
+                      <Link href="/inventory">
+                        <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                          <Package className="w-4 h-4 mr-2" />
+                          Inventory
+                        </a>
+                      </Link>
+                      {user?.role === "admin" && (
+                        <Link href="/settings">
+                          <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                            <Settings className="w-4 h-4 mr-2" />
+                            Settings
+                          </a>
+                        </Link>
+                      )}
+                    </nav>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+          )}
         </div>
-        <LanguageSwitcher />
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <a href="/" className="no-underline">
-          <div className="bg-gray-50 p-4 rounded-md cursor-pointer hover:bg-gray-100">
-            <h3 className="font-medium mb-2">{t.dashboard}</h3>
-            <p className="text-gray-600">{t.financialDashboard}</p>
-          </div>
-        </a>
-        <a href="/financial-health" className="no-underline">
-          <div className="bg-gray-50 p-4 rounded-md cursor-pointer hover:bg-gray-100">
-            <h3 className="font-medium mb-2">{t.financialHealth}</h3>
-            <p className="text-gray-600">{t.financialHealthScore}</p>
-          </div>
-        </a>
-        <a href="/calendar" className="no-underline">
-          <div className="bg-gray-50 p-4 rounded-md cursor-pointer hover:bg-gray-100">
-            <h3 className="font-medium mb-2">{t.calendar}</h3>
-            <p className="text-gray-600">{t.appointmentCalendar}</p>
-          </div>
-        </a>
+        
+        <div className="flex items-center">
+          <LanguageSwitcher />
+          
+          {/* User Menu */}
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-4">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user.avatar || ""} alt={user.username} />
+                    <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user.fullName || user.username}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <User className="w-4 h-4 mr-2" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link href="/auth">
+              <Button variant="default" size="sm" className="ml-4">
+                Login
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -77,24 +282,24 @@ function LanguageSwitcher() {
   const { language, setLanguage } = useLanguage();
   
   return (
-    <div className="flex gap-2 mt-4">
+    <div className="flex gap-2">
       <button
-        className={`px-3 py-2 rounded-md ${language === 'en' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
+        className={`px-2 py-1 text-xs rounded-md ${language === 'en' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
         onClick={() => setLanguage('en')}
       >
-        English
+        EN
       </button>
       <button
-        className={`px-3 py-2 rounded-md ${language === 'fr' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
+        className={`px-2 py-1 text-xs rounded-md ${language === 'fr' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
         onClick={() => setLanguage('fr')}
       >
-        Français
+        FR
       </button>
       <button
-        className={`px-3 py-2 rounded-md ${language === 'ar' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
+        className={`px-2 py-1 text-xs rounded-md ${language === 'ar' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
         onClick={() => setLanguage('ar')}
       >
-        العربية
+        عربي
       </button>
     </div>
   );
