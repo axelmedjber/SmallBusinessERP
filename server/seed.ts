@@ -12,6 +12,11 @@ async function seed() {
   
   try {
     // Clear existing data (optional)
+    await db.delete(invoiceItems);
+    await db.delete(invoices);
+    await db.delete(inventoryItems);
+    await db.delete(inventoryCategories);
+    await db.delete(customers);
     await db.delete(appointments);
     await db.delete(expenseCategories);
     await db.delete(monthlyData);
@@ -20,11 +25,39 @@ async function seed() {
     
     console.log("Database cleared successfully");
     
-    // Add a sample user
-    const [user] = await db.insert(users).values({
-      username: 'admin',
-      password: 'admin123' // In a real application, this would be hashed
-    }).returning();
+    // Add sample users with different roles
+    const usersList = [
+      {
+        username: 'admin',
+        password: 'admin123', // In a real application, this would be hashed
+        email: 'admin@example.com',
+        fullName: 'Admin User',
+        role: "admin" as const,
+        active: true,
+        createdAt: new Date()
+      },
+      {
+        username: 'manager',
+        password: 'manager123',
+        email: 'manager@example.com',
+        fullName: 'Manager User',
+        role: "manager" as const,
+        active: true,
+        createdAt: new Date()
+      },
+      {
+        username: 'employee',
+        password: 'employee123',
+        email: 'employee@example.com',
+        fullName: 'Employee User',
+        role: "employee" as const,
+        active: true,
+        createdAt: new Date()
+      }
+    ];
+    
+    const createdUsers = await db.insert(users).values(usersList).returning();
+    const user = createdUsers[0];
     
     console.log(`Created user: ${user.username}`);
     
@@ -95,6 +128,285 @@ async function seed() {
     }
     
     console.log("Created appointments");
+    
+    // Add customers
+    const customersList = [
+      { 
+        name: 'John Smith', 
+        company: 'ABC Corporation', 
+        email: 'john.smith@abccorp.com', 
+        phone: '555-123-4567',
+        address: '123 Business Ave',
+        city: 'New York',
+        state: 'NY',
+        zipCode: '10001',
+        country: 'USA',
+        notes: 'Key account, prefers email communication',
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      { 
+        name: 'Sarah Johnson', 
+        company: 'Johnson Consulting', 
+        email: 'sarah@johnsonconsulting.com', 
+        phone: '555-987-6543',
+        address: '456 Consulting Blvd',
+        city: 'Chicago',
+        state: 'IL',
+        zipCode: '60601',
+        country: 'USA',
+        notes: 'New client, referred by ABC Corp',
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      { 
+        name: 'David Chen', 
+        company: 'Tech Innovations', 
+        email: 'david@techinnovations.com', 
+        phone: '555-456-7890',
+        address: '789 Technology Park',
+        city: 'San Francisco',
+        state: 'CA',
+        zipCode: '94105',
+        country: 'USA',
+        notes: 'Tech startup, growing quickly',
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    
+    const customerIds = [];
+    for (const customer of customersList) {
+      const [newCustomer] = await db.insert(customers).values(customer).returning();
+      customerIds.push(newCustomer.id);
+    }
+    
+    console.log("Created customers");
+    
+    // Add inventory categories
+    const inventoryCategoriesList = [
+      { name: 'Office Supplies', description: 'Paper, pens, staplers, and other office essentials' },
+      { name: 'Electronics', description: 'Computers, phones, and other electronic devices' },
+      { name: 'Furniture', description: 'Desks, chairs, and other office furniture' }
+    ];
+    
+    const categoryIds = [];
+    for (const category of inventoryCategoriesList) {
+      const [newCategory] = await db.insert(inventoryCategories).values(category).returning();
+      categoryIds.push(newCategory.id);
+    }
+    
+    console.log("Created inventory categories");
+    
+    // Add inventory items
+    const now = new Date();
+    const inventoryItemsList = [
+      { 
+        categoryId: categoryIds[0], 
+        name: 'Copy Paper (500 sheets)', 
+        description: 'Standard 8.5x11 white copy paper, 500 sheets per ream',
+        sku: 'PAPER-001',
+        quantityInStock: 120,
+        reorderLevel: 20,
+        unitPrice: 4.99,
+        costPrice: 3.50,
+        createdAt: now,
+        updatedAt: now
+      },
+      { 
+        categoryId: categoryIds[0], 
+        name: 'Ballpoint Pens (Box of 12)', 
+        description: 'Medium point blue ballpoint pens, box of 12',
+        sku: 'PEN-002',
+        quantityInStock: 25,
+        reorderLevel: 10,
+        unitPrice: 3.99,
+        costPrice: 2.25,
+        createdAt: now,
+        updatedAt: now
+      },
+      { 
+        categoryId: categoryIds[1], 
+        name: 'Wireless Mouse', 
+        description: 'Ergonomic wireless mouse with USB receiver',
+        sku: 'ELEC-001',
+        quantityInStock: 15,
+        reorderLevel: 5,
+        unitPrice: 24.99,
+        costPrice: 18.50,
+        createdAt: now,
+        updatedAt: now
+      },
+      { 
+        categoryId: categoryIds[1], 
+        name: 'USB Flash Drive 64GB', 
+        description: 'USB 3.0 flash drive with 64GB storage capacity',
+        sku: 'ELEC-002',
+        quantityInStock: 8,
+        reorderLevel: 10,
+        unitPrice: 19.99,
+        costPrice: 14.75,
+        createdAt: now,
+        updatedAt: now
+      },
+      { 
+        categoryId: categoryIds[2], 
+        name: 'Office Chair', 
+        description: 'Adjustable ergonomic office chair with lumbar support',
+        sku: 'FURN-001',
+        quantityInStock: 7,
+        reorderLevel: 3,
+        unitPrice: 199.99,
+        costPrice: 149.50,
+        createdAt: now,
+        updatedAt: now
+      }
+    ];
+    
+    for (const item of inventoryItemsList) {
+      await db.insert(inventoryItems).values({
+        ...item,
+        // Ensure numeric values are properly typed as strings for Drizzle
+        unitPrice: String(item.unitPrice),
+        costPrice: String(item.costPrice),
+        quantityInStock: String(item.quantityInStock),
+        reorderLevel: String(item.reorderLevel)
+      });
+    }
+    
+    console.log("Created inventory items");
+    
+    // Create invoices
+    const invoicesList = [
+      {
+        customerId: customerIds[0],
+        invoiceNumber: 'INV-2023-001',
+        status: 'paid',
+        issueDate: new Date('2023-01-15'),
+        dueDate: new Date('2023-02-15'),
+        subtotal: 299.97,
+        taxRate: 8.5,
+        taxAmount: 25.50,
+        totalAmount: 325.47,
+        notes: 'Paid via bank transfer',
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        customerId: customerIds[1],
+        invoiceNumber: 'INV-2023-002',
+        status: 'pending',
+        issueDate: new Date('2023-02-20'),
+        dueDate: new Date('2023-03-20'),
+        subtotal: 499.95,
+        taxRate: 8.5,
+        taxAmount: 42.50,
+        totalAmount: 542.45,
+        notes: 'Net 30 payment terms',
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        customerId: customerIds[2],
+        invoiceNumber: 'INV-2023-003',
+        status: 'draft',
+        issueDate: new Date('2023-03-05'),
+        dueDate: new Date('2023-04-05'),
+        subtotal: 899.94,
+        taxRate: 8.5,
+        taxAmount: 76.49,
+        totalAmount: 976.43,
+        notes: 'Draft invoice for review',
+        createdAt: now,
+        updatedAt: now
+      }
+    ];
+    
+    const invoiceIds = [];
+    for (const invoice of invoicesList) {
+      const [newInvoice] = await db.insert(invoices).values({
+        ...invoice,
+        // Convert numeric values to strings for Drizzle
+        subtotal: String(invoice.subtotal),
+        taxRate: String(invoice.taxRate),
+        taxAmount: String(invoice.taxAmount),
+        totalAmount: String(invoice.totalAmount),
+        // Convert dates to ISO strings
+        issueDate: invoice.issueDate.toISOString(),
+        dueDate: invoice.dueDate.toISOString()
+      }).returning();
+      invoiceIds.push(newInvoice.id);
+    }
+    
+    console.log("Created invoices");
+    
+    // Create invoice items
+    const invoiceItemsList = [
+      {
+        invoiceId: invoiceIds[0],
+        description: 'Copy Paper (500 sheets) - 10 reams',
+        quantity: 10,
+        unitPrice: 4.99,
+        amount: 49.90
+      },
+      {
+        invoiceId: invoiceIds[0],
+        description: 'USB Flash Drive 64GB - 5 units',
+        quantity: 5,
+        unitPrice: 19.99,
+        amount: 99.95
+      },
+      {
+        invoiceId: invoiceIds[0],
+        description: 'Wireless Mouse - 5 units',
+        quantity: 5,
+        unitPrice: 24.99,
+        amount: 124.95
+      },
+      {
+        invoiceId: invoiceIds[1],
+        description: 'Office Chair - 2 units',
+        quantity: 2,
+        unitPrice: 199.99,
+        amount: 399.98
+      },
+      {
+        invoiceId: invoiceIds[1],
+        description: 'Ballpoint Pens (Box of 12) - 5 boxes',
+        quantity: 5,
+        unitPrice: 3.99,
+        amount: 19.95
+      },
+      {
+        invoiceId: invoiceIds[2],
+        description: 'Office Chair - 4 units',
+        quantity: 4,
+        unitPrice: 199.99,
+        amount: 799.96
+      },
+      {
+        invoiceId: invoiceIds[2],
+        description: 'USB Flash Drive 64GB - 5 units',
+        quantity: 5,
+        unitPrice: 19.99,
+        amount: 99.95
+      }
+    ];
+    
+    for (const item of invoiceItemsList) {
+      await db.insert(invoiceItems).values({
+        ...item,
+        // Convert numeric values to strings for Drizzle
+        quantity: String(item.quantity),
+        unitPrice: String(item.unitPrice),
+        amount: String(item.amount)
+      });
+    }
+    
+    console.log("Created invoice items");
     
     console.log("Database seeded successfully!");
   } catch (error) {
