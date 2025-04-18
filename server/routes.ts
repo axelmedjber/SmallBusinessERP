@@ -100,6 +100,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Financial health score endpoint
+  app.get("/api/financial-health", async (req: Request, res: Response) => {
+    try {
+      // Get financial data and other metrics needed for score calculation
+      const financialData = await storage.getFinancialData("monthly");
+      const monthlyData = await storage.getMonthlyData();
+      const inventoryItems = await storage.getInventoryItems();
+      const invoices = await storage.getInvoices();
+      const lowStockItems = await storage.getLowStockItems();
+      
+      if (!financialData) {
+        return res.status(404).json({ message: "Financial data not found" });
+      }
+      
+      // Calculate financial health metrics
+      
+      // 1. Profit margin (0-30 points)
+      const profitMargin = financialData.profit / financialData.revenue;
+      const profitMarginScore = Math.min(30, Math.round(profitMargin * 100));
+      
+      // 2. Revenue growth (0-20 points)
+      let revenueGrowth = 0;
+      if (monthlyData.length >= 2) {
+        const currentMonth = monthlyData[monthlyData.length - 1].revenue;
+        const previousMonth = monthlyData[monthlyData.length - 2].revenue;
+        revenueGrowth = (currentMonth - previousMonth) / previousMonth;
+      }
+      const revenueGrowthScore = Math.min(20, Math.max(0, Math.round(revenueGrowth * 100)));
+      
+      // 3. Expense management (0-15 points)
+      const expenseRatio = financialData.expenses / financialData.revenue;
+      const expenseManagementScore = Math.min(15, Math.round(15 * (1 - expenseRatio)));
+      
+      // 4. Inventory health (0-15 points)
+      const inventoryHealth = lowStockItems.length > 0 
+        ? 1 - (lowStockItems.length / inventoryItems.length) 
+        : 1;
+      const inventoryHealthScore = Math.round(15 * inventoryHealth);
+      
+      // 5. Accounts receivable (0-20 points)
+      const overdueInvoices = invoices.filter(inv => inv.status === "overdue").length;
+      const arScore = overdueInvoices > 0 
+        ? Math.round(20 * (1 - (overdueInvoices / invoices.length)))
+        : 20;
+      
+      // Calculate total score (0-100)
+      const totalScore = profitMarginScore + revenueGrowthScore + 
+                       expenseManagementScore + inventoryHealthScore + arScore;
+      
+      // Determine score category and recommendations
+      let category = "Poor";
+      let recommendations = [];
+      
+      if (totalScore >= 80) {
+        category = "Excellent";
+        recommendations = [
+          "Consider expansion opportunities", 
+          "Invest in growth initiatives",
+          "Review pricing strategy for optimization"
+        ];
+      } else if (totalScore >= 60) {
+        category = "Good";
+        recommendations = [
+          "Focus on increasing profit margins",
+          "Look for ways to reduce operational costs",
+          "Monitor inventory levels more closely"
+        ];
+      } else if (totalScore >= 40) {
+        category = "Fair";
+        recommendations = [
+          "Implement stricter expense controls",
+          "Address accounts receivable issues",
+          "Review pricing and product mix"
+        ];
+      } else {
+        recommendations = [
+          "Prioritize cash flow management",
+          "Reduce unnecessary expenses immediately",
+          "Focus on collecting overdue payments"
+        ];
+      }
+      
+      return res.status(200).json({
+        score: totalScore,
+        category,
+        metrics: {
+          profitMargin: {
+            score: profitMarginScore,
+            value: profitMargin,
+            maxScore: 30
+          },
+          revenueGrowth: {
+            score: revenueGrowthScore,
+            value: revenueGrowth,
+            maxScore: 20
+          },
+          expenseManagement: {
+            score: expenseManagementScore,
+            value: expenseRatio,
+            maxScore: 15
+          },
+          inventoryHealth: {
+            score: inventoryHealthScore,
+            value: inventoryHealth,
+            maxScore: 15
+          },
+          accountsReceivable: {
+            score: arScore,
+            value: overdueInvoices / Math.max(1, invoices.length),
+            maxScore: 20
+          }
+        },
+        recommendations
+      });
+    } catch (error) {
+      console.error("Error calculating financial health score:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
   // Appointments endpoints
   app.get("/api/appointments", async (req: Request, res: Response) => {
     try {
