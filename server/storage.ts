@@ -1,10 +1,13 @@
+import { db } from './db';
 import { 
   User, InsertUser, 
   FinancialData, InsertFinancialData,
   MonthlyData, InsertMonthlyData,
   ExpenseCategory, InsertExpenseCategory,
-  Appointment, InsertAppointment
+  Appointment, InsertAppointment,
+  users, financialData, monthlyData, expenseCategories, appointments
 } from "@shared/schema";
+import { eq, and, like } from 'drizzle-orm';
 
 export interface IStorage {
   // User
@@ -34,170 +37,124 @@ export interface IStorage {
   deleteAppointment(id: number): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private financialData: Map<number, FinancialData>;
-  private monthlyData: Map<number, MonthlyData>;
-  private expenseCategories: Map<number, ExpenseCategory>;
-  private appointments: Map<number, Appointment>;
-  
-  private userIdCounter: number;
-  private financialDataIdCounter: number;
-  private monthlyDataIdCounter: number;
-  private expenseCategoryIdCounter: number;
-  private appointmentIdCounter: number;
-
-  constructor() {
-    this.users = new Map();
-    this.financialData = new Map();
-    this.monthlyData = new Map();
-    this.expenseCategories = new Map();
-    this.appointments = new Map();
-    
-    this.userIdCounter = 1;
-    this.financialDataIdCounter = 1;
-    this.monthlyDataIdCounter = 1;
-    this.expenseCategoryIdCounter = 1;
-    this.appointmentIdCounter = 1;
-    
-    // Initialize with sample data
-    this.initializeSampleData();
-  }
-
+// Database storage implementation
+export class DatabaseStorage implements IStorage {
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userIdCounter++;
-    const timestamp = new Date();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
-  
+
   // Financial Data methods
   async getFinancialData(period: string): Promise<FinancialData | undefined> {
-    return Array.from(this.financialData.values()).find(
-      (data) => data.period === period
-    );
+    const [data] = await db.select().from(financialData).where(eq(financialData.period, period));
+    return data;
   }
-  
+
   async createFinancialData(data: InsertFinancialData): Promise<FinancialData> {
-    const id = this.financialDataIdCounter++;
-    const updatedAt = new Date();
-    const financialData: FinancialData = { ...data, id, updatedAt };
-    this.financialData.set(id, financialData);
-    return financialData;
-  }
-  
-  async updateFinancialData(id: number, data: Partial<InsertFinancialData>): Promise<FinancialData | undefined> {
-    const existingData = this.financialData.get(id);
-    if (!existingData) return undefined;
-    
-    const updatedData: FinancialData = {
-      ...existingData,
+    const [newData] = await db.insert(financialData).values({
       ...data,
-      updatedAt: new Date()
-    };
-    
-    this.financialData.set(id, updatedData);
+      updatedAt: new Date(),
+    }).returning();
+    return newData;
+  }
+
+  async updateFinancialData(id: number, data: Partial<InsertFinancialData>): Promise<FinancialData | undefined> {
+    const [updatedData] = await db.update(financialData)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(financialData.id, id))
+      .returning();
     return updatedData;
   }
-  
+
   // Monthly Data methods
   async getMonthlyData(): Promise<MonthlyData[]> {
-    return Array.from(this.monthlyData.values());
+    return await db.select().from(monthlyData);
   }
-  
+
   async createMonthlyData(data: InsertMonthlyData): Promise<MonthlyData> {
-    const id = this.monthlyDataIdCounter++;
-    const monthlyData: MonthlyData = { ...data, id };
-    this.monthlyData.set(id, monthlyData);
-    return monthlyData;
+    const [newData] = await db.insert(monthlyData).values(data).returning();
+    return newData;
   }
-  
+
   // Expense Categories methods
   async getExpenseCategories(): Promise<ExpenseCategory[]> {
-    return Array.from(this.expenseCategories.values());
+    return await db.select().from(expenseCategories);
   }
-  
+
   async createExpenseCategory(data: InsertExpenseCategory): Promise<ExpenseCategory> {
-    const id = this.expenseCategoryIdCounter++;
-    const expenseCategory: ExpenseCategory = { ...data, id };
-    this.expenseCategories.set(id, expenseCategory);
-    return expenseCategory;
-  }
-  
-  async updateExpenseCategory(id: number, data: Partial<InsertExpenseCategory>): Promise<ExpenseCategory | undefined> {
-    const existingCategory = this.expenseCategories.get(id);
-    if (!existingCategory) return undefined;
-    
-    const updatedCategory: ExpenseCategory = {
-      ...existingCategory,
-      ...data
+    // Ensure color is not undefined
+    const categoryData = {
+      ...data,
+      color: data.color || null,
     };
     
-    this.expenseCategories.set(id, updatedCategory);
+    const [newCategory] = await db.insert(expenseCategories).values(categoryData).returning();
+    return newCategory;
+  }
+
+  async updateExpenseCategory(id: number, data: Partial<InsertExpenseCategory>): Promise<ExpenseCategory | undefined> {
+    const [updatedCategory] = await db.update(expenseCategories)
+      .set(data)
+      .where(eq(expenseCategories.id, id))
+      .returning();
     return updatedCategory;
   }
-  
+
   // Appointments methods
   async getAppointments(): Promise<Appointment[]> {
-    return Array.from(this.appointments.values());
+    return await db.select().from(appointments);
   }
-  
+
   async getAppointmentsByMonth(year: number, month: number): Promise<Appointment[]> {
     const monthStr = month < 10 ? `0${month}` : `${month}`;
     const monthPrefix = `${year}-${monthStr}`;
     
-    return Array.from(this.appointments.values()).filter(
-      (appointment) => appointment.date.startsWith(monthPrefix)
-    );
+    return await db.select().from(appointments)
+      .where(like(appointments.date, `${monthPrefix}%`));
   }
-  
+
   async createAppointment(data: InsertAppointment): Promise<Appointment> {
-    const id = this.appointmentIdCounter++;
-    const createdAt = new Date();
-    const colorCode = this.getRandomColorCode(id);
-    
-    const appointment: Appointment = { 
-      ...data, 
-      id, 
-      createdAt,
-      colorCode
+    // Ensure description is not undefined
+    const appointmentData = {
+      ...data,
+      createdAt: new Date(),
+      colorCode: this.getRandomColorCode(),
+      description: data.description || null,
     };
     
-    this.appointments.set(id, appointment);
-    return appointment;
+    const [newAppointment] = await db.insert(appointments).values(appointmentData).returning();
+    return newAppointment;
   }
-  
+
   async updateAppointment(id: number, data: Partial<InsertAppointment>): Promise<Appointment | undefined> {
-    const existingAppointment = this.appointments.get(id);
-    if (!existingAppointment) return undefined;
-    
-    const updatedAppointment: Appointment = {
-      ...existingAppointment,
-      ...data
-    };
-    
-    this.appointments.set(id, updatedAppointment);
+    const [updatedAppointment] = await db.update(appointments)
+      .set(data)
+      .where(eq(appointments.id, id))
+      .returning();
     return updatedAppointment;
   }
-  
+
   async deleteAppointment(id: number): Promise<boolean> {
-    return this.appointments.delete(id);
+    const result = await db.delete(appointments).where(eq(appointments.id, id)).returning();
+    return result.length > 0;
   }
-  
-  // Helper methods
-  private getRandomColorCode(id: number): string {
+
+  // Helper method for generating color codes
+  private getRandomColorCode(): string {
     const colors = [
       'bg-blue-100 text-blue-800',
       'bg-green-100 text-green-800',
@@ -209,70 +166,10 @@ export class MemStorage implements IStorage {
       'bg-teal-100 text-teal-800'
     ];
     
-    return colors[id % colors.length];
-  }
-  
-  // Initialize with sample data
-  private initializeSampleData() {
-    // Financial data
-    this.createFinancialData({
-      period: "monthly",
-      revenue: 24500,
-      revenuePercentChange: 72,
-      expenses: 16300,
-      expensesPercentChange: 35,
-      profit: 8200,
-      profitPercentChange: 159,
-    });
-    
-    // Monthly data for charts
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    const revenueData = [19500, 20200, 21000, 22500, 21800, 22000, 23000, 24000, 23500, 24000, 24800, 24500];
-    const expensesData = [15000, 16000, 15500, 14800, 15200, 15800, 16000, 16500, 15800, 16200, 16000, 16300];
-    
-    months.forEach((month, idx) => {
-      this.createMonthlyData({
-        month,
-        year: 2023,
-        revenue: revenueData[idx],
-        expenses: expensesData[idx],
-        profit: revenueData[idx] - expensesData[idx]
-      });
-    });
-    
-    // Expense categories
-    const expenseCategories = [
-      { name: 'Payroll', amount: 6500, percentage: 39.9, color: '#f97316' },
-      { name: 'Rent', amount: 4000, percentage: 24.5, color: '#facc15' },
-      { name: 'Utilities', amount: 1800, percentage: 11.0, color: '#84cc16' },
-      { name: 'Marketing', amount: 1200, percentage: 7.4, color: '#14b8a6' },
-      { name: 'Supplies', amount: 900, percentage: 5.5, color: '#3b82f6' },
-      { name: 'Maintenance', amount: 700, percentage: 4.3, color: '#8b5cf6' },
-      { name: 'Insurance', amount: 600, percentage: 3.7, color: '#ec4899' },
-      { name: 'Taxes', amount: 600, percentage: 3.7, color: '#ef4444' }
-    ];
-    
-    expenseCategories.forEach(category => {
-      this.createExpenseCategory(category);
-    });
-    
-    // Appointments
-    const appointments = [
-      { title: 'Client Meeting', date: '2023-04-01', time: '10:00', duration: 60, description: 'Discuss new requirements' },
-      { title: 'Team Meeting', date: '2023-04-03', time: '14:30', duration: 45, description: 'Weekly standup' },
-      { title: 'Supplier Call', date: '2023-04-07', time: '09:00', duration: 30, description: 'Negotiate new contract' },
-      { title: 'Financial Review', date: '2023-04-10', time: '13:00', duration: 90, description: 'Quarterly review' },
-      { title: 'Tax Meeting', date: '2023-04-15', time: '11:30', duration: 60, description: 'Tax planning' },
-      { title: 'Client Onboarding', date: '2023-04-18', time: '15:00', duration: 120, description: 'New client setup' },
-      { title: 'Staff Meeting', date: '2023-04-21', time: '10:30', duration: 45, description: 'Team updates' },
-      { title: 'Inventory Check', date: '2023-04-24', time: '14:00', duration: 180, description: 'Monthly inventory' },
-      { title: 'Sales Meeting', date: '2023-04-28', time: '11:00', duration: 60, description: 'Review sales targets' }
-    ];
-    
-    appointments.forEach(appointment => {
-      this.createAppointment(appointment);
-    });
+    const randomIndex = Math.floor(Math.random() * colors.length);
+    return colors[randomIndex];
   }
 }
 
-export const storage = new MemStorage();
+// Initialize with the database storage
+export const storage = new DatabaseStorage();
