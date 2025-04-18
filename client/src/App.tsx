@@ -2,6 +2,7 @@ import React from "react";
 import { Route, Switch } from "wouter";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
+import FinancialHealth from "./pages/FinancialHealth";
 import NotFound from "./pages/not-found";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { useLanguage } from "@/hooks/use-language";
@@ -17,6 +18,7 @@ function App() {
             <Switch>
               <Route path="/" component={Dashboard} />
               <Route path="/calendar" component={Calendar} />
+              <Route path="/financial-health" component={FinancialHealth} />
               <Route component={NotFound} />
             </Switch>
           </div>
@@ -46,11 +48,17 @@ function Header() {
         <LanguageSwitcher />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <a href="/" className="no-underline">
           <div className="bg-gray-50 p-4 rounded-md cursor-pointer hover:bg-gray-100">
             <h3 className="font-medium mb-2">{t.dashboard}</h3>
             <p className="text-gray-600">{t.financialDashboard}</p>
+          </div>
+        </a>
+        <a href="/financial-health" className="no-underline">
+          <div className="bg-gray-50 p-4 rounded-md cursor-pointer hover:bg-gray-100">
+            <h3 className="font-medium mb-2">{t.financialHealth}</h3>
+            <p className="text-gray-600">{t.financialHealthScore}</p>
           </div>
         </a>
         <a href="/calendar" className="no-underline">
