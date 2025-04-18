@@ -25,11 +25,11 @@ import {
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// Define the appointment interface
+// Define the appointment interface to match our schema
 interface AppointmentData {
   title: string;
-  date: string;
-  startTime: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:MM
   duration: number;
   description: string;
 }
@@ -38,7 +38,7 @@ interface AppointmentData {
 const initialAppointmentState: AppointmentData = {
   title: "",
   date: format(new Date(), "yyyy-MM-dd"),
-  startTime: "09:00",
+  time: "09:00",
   duration: 30,
   description: ""
 };
