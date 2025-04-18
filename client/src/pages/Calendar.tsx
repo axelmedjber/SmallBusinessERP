@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLanguage } from "../App";
+import { useLanguage } from "@/hooks/use-language";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react";

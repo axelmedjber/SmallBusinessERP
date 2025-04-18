@@ -1,10 +1,12 @@
 import { createContext, useState, useEffect, ReactNode } from "react";
 import { Language, Direction } from "@/lib/types";
+import { translations } from "@/lib/utils";
 
 interface LanguageContextType {
   language: Language;
   setLanguage: (language: Language) => void;
   direction: Direction;
+  t: typeof translations.en;
 }
 
 export const LanguageContext = createContext<LanguageContextType | null>(null);
@@ -35,9 +37,12 @@ export const LanguageProvider = ({ children }: LanguageProviderProps) => {
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
     document.documentElement.lang = language;
   }, [language]);
+
+  // Get translations for current language
+  const t = translations[language];
   
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, direction }}>
+    <LanguageContext.Provider value={{ language, setLanguage, direction, t }}>
       {children}
     </LanguageContext.Provider>
   );

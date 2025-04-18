@@ -1,4 +1,4 @@
-import { useLanguage } from "../App";
+import { useLanguage } from "@/hooks/use-language";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 const Dashboard = () => {

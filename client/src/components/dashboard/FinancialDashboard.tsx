@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { useLanguage } from "../../App";
+import { useLanguage } from "@/hooks/use-language";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { translations } from "@/lib/utils";
 import { PeriodType } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
@@ -11,8 +10,7 @@ import FinancialCharts from "./FinancialCharts";
 import { queryClient } from "@/lib/queryClient";
 
 const FinancialDashboard = () => {
-  const { language } = useLanguage();
-  const t = translations[language];
+  const { language, t } = useLanguage();
   const [period, setPeriod] = useState<PeriodType>("monthly");
   
   const { data: financialData, isLoading } = useQuery({
