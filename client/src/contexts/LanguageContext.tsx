@@ -45,6 +45,9 @@ type TranslationType = {
   minutes: string;
   save: string;
   cancel: string;
+  financialHealth: string;
+  financialHealthScore: string;
+  viewDetails: string;
 };
 
 interface LanguageContextType {
