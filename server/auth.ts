@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -121,19 +121,21 @@ export function setupAuth(app: Express) {
     res.json(userWithoutPassword);
   });
 
-  // Role-based route middleware
-  export const requireRole = (roles: string[]) => {
-    return (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      const user = req.user as SelectUser;
-      if (!roles.includes(user.role)) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-      
-      next();
-    };
-  };
+  // End of setupAuth function
 }
+
+// Role-based route middleware
+export const requireRole = (roles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    
+    const user = req.user as SelectUser;
+    if (!roles.includes(user.role)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+    
+    next();
+  };
+};

@@ -49,7 +49,7 @@ function App() {
       <LanguageProvider>
         <div className="min-h-screen flex flex-col bg-gray-50">
           <div className="w-full max-w-6xl mx-auto bg-white shadow-lg rounded-lg p-4 sm:p-8 my-8">
-            <Header />
+            <AppHeader />
             <div className="mt-6">
               <Switch>
                 <Route path="/auth" component={AuthPage} />
@@ -71,7 +71,7 @@ function App() {
 }
 
 // Header with navigation
-function Header() {
+function AppHeader() {
   const { t, language, direction } = useLanguage();
   const { user, logoutMutation } = useAuth();
   
@@ -234,7 +234,6 @@ function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-4">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatar || ""} alt={user.username} />
                     <AvatarFallback>{getUserInitials()}</AvatarFallback>
                   </Avatar>
                 </Button>
