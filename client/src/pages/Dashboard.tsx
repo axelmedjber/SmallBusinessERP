@@ -1,14 +1,27 @@
+import { useState } from "react";
 import { useLanguage } from "@/hooks/use-language";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import FinancialCharts from "@/components/dashboard/FinancialCharts";
+import ExpenseAnalysis from "@/components/dashboard/ExpenseAnalysis";
+import FinancialDashboard from "@/components/dashboard/FinancialDashboard";
 
 const Dashboard = () => {
   const { language, t } = useLanguage();
+  
+  // Query financial data
+  const { data: financialData, isLoading } = useQuery({
+    queryKey: ["/api/financial-data", "monthly"],
+  });
   
   return (
     <div className="grid gap-6">
       <div className="mb-6">
         <h2 className="text-2xl font-semibold text-gray-800">{t.financialDashboard}</h2>
       </div>
+      
+      {/* Financial Dashboard with Period Selector */}
+      <FinancialDashboard />
       
       {/* Financial Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -37,29 +50,11 @@ const Dashboard = () => {
         </Card>
       </div>
       
-      {/* Revenue vs Expenses */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>{t.revenueVsExpenses}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80 flex items-center justify-center bg-gray-100 rounded-md">
-            <p className="text-gray-500">Chart visualization will be added here</p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Charts */}
+      {financialData && <FinancialCharts data={financialData} />}
       
-      {/* Expense Breakdown */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>{t.expenseBreakdown}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80 flex items-center justify-center bg-gray-100 rounded-md">
-            <p className="text-gray-500">Pie chart visualization will be added here</p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Expense Analysis */}
+      <ExpenseAnalysis />
     </div>
   );
 };
