@@ -101,22 +101,22 @@ function AppHeader() {
           {user && (
             <nav className="hidden md:flex space-x-4">
               <Link href="/">
-                <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
                   <Home className="w-4 h-4 mr-2" />
                   {t.dashboard}
-                </a>
+                </div>
               </Link>
               <Link href="/calendar">
-                <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
                   <CalendarIcon className="w-4 h-4 mr-2" />
                   {t.calendar}
-                </a>
+                </div>
               </Link>
               <Link href="/financial-health">
-                <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
                   <TrendingUp className="w-4 h-4 mr-2" />
                   {t.financialHealth}
-                </a>
+                </div>
               </Link>
               
               <DropdownMenu>
@@ -174,47 +174,47 @@ function AppHeader() {
                   <div className="py-4">
                     <nav className="flex flex-col space-y-3">
                       <Link href="/">
-                        <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                        <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
                           <Home className="w-4 h-4 mr-2" />
                           {t.dashboard}
-                        </a>
+                        </div>
                       </Link>
                       <Link href="/calendar">
-                        <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                        <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
                           <CalendarIcon className="w-4 h-4 mr-2" />
                           {t.calendar}
-                        </a>
+                        </div>
                       </Link>
                       <Link href="/financial-health">
-                        <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                        <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
                           <TrendingUp className="w-4 h-4 mr-2" />
                           {t.financialHealth}
-                        </a>
+                        </div>
                       </Link>
                       <Link href="/customers">
-                        <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                        <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
                           <Users className="w-4 h-4 mr-2" />
                           Customers
-                        </a>
+                        </div>
                       </Link>
                       <Link href="/invoices">
-                        <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                        <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
                           <FileText className="w-4 h-4 mr-2" />
                           Invoices
-                        </a>
+                        </div>
                       </Link>
                       <Link href="/inventory">
-                        <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                        <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
                           <Package className="w-4 h-4 mr-2" />
                           Inventory
-                        </a>
+                        </div>
                       </Link>
                       {user?.role === "admin" && (
                         <Link href="/settings">
-                          <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100">
+                          <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
                             <Settings className="w-4 h-4 mr-2" />
                             Settings
-                          </a>
+                          </div>
                         </Link>
                       )}
                     </nav>
