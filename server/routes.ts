@@ -62,8 +62,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Refresh financial data endpoint
-  app.post("/api/financial-data/refresh", async (req: Request, res: Response) => {
+  // Refresh financial data endpoint (restricted to admin and manager roles)
+  app.post("/api/financial-data/refresh", requireRole(["admin", "manager"]), async (req: Request, res: Response) => {
     try {
       const period = req.query.period as string || "monthly";
       const financialData = await storage.getFinancialData(period);
@@ -395,7 +395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete("/api/customers/:id", async (req: Request, res: Response) => {
+  app.delete("/api/customers/:id", requireRole(["admin", "manager"]), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id, 10);
       
@@ -547,7 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete("/api/invoices/:id", async (req: Request, res: Response) => {
+  app.delete("/api/invoices/:id", requireRole(["admin", "manager"]), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id, 10);
       
@@ -600,7 +600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/inventory/categories", async (req: Request, res: Response) => {
+  app.post("/api/inventory/categories", requireRole(["admin", "manager"]), async (req: Request, res: Response) => {
     try {
       const categoryData = insertInventoryCategorySchema.parse(req.body);
       
@@ -810,8 +810,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User endpoints
-  app.get("/api/users", async (req: Request, res: Response) => {
+  // User endpoints - restricted to admin role only
+  app.get("/api/users", requireRole(["admin"]), async (req: Request, res: Response) => {
     try {
       const users = await storage.getUsers();
       return res.status(200).json(users);
@@ -821,7 +821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/users/:id", async (req: Request, res: Response) => {
+  app.get("/api/users/:id", requireRole(["admin"]), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id, 10);
       
@@ -842,7 +842,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/users", async (req: Request, res: Response) => {
+  app.post("/api/users", requireRole(["admin"]), async (req: Request, res: Response) => {
     try {
       const userData = insertUserSchema.parse(req.body);
       
@@ -858,7 +858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put("/api/users/:id", async (req: Request, res: Response) => {
+  app.put("/api/users/:id", requireRole(["admin"]), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id, 10);
       
