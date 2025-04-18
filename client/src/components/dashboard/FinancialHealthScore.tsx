@@ -174,14 +174,24 @@ const FinancialHealthScore = () => {
               <Gauge className="h-5 w-5 text-gray-600 mr-2" />
               <h3 className="text-lg font-medium text-gray-900">{scoreT.financialHealthScore}</h3>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowDetails(!showDetails)}
-              className="text-sm"
-            >
-              {showDetails ? scoreT.hideDetails : scoreT.viewDetails}
-            </Button>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDetails(!showDetails)}
+                className="text-sm"
+              >
+                {showDetails ? scoreT.hideDetails : scoreT.viewDetails}
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                className="text-sm bg-blue-500 hover:bg-blue-600"
+                onClick={() => window.location.href = '/financial-health'}
+              >
+                {t.viewDetails}
+              </Button>
+            </div>
           </div>
           
           <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6 mb-4">
