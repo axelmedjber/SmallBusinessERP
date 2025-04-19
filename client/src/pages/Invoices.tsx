@@ -754,15 +754,15 @@ export default function Invoices() {
                   <div className="w-64 space-y-2">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
-                      <span>${invoiceWithItems.invoice.subtotal.toFixed(2)}</span>
+                      <span>${parseFloat(invoiceWithItems.invoice.subtotal || "0").toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Tax:</span>
-                      <span>${invoiceWithItems.invoice.tax.toFixed(2)}</span>
+                      <span>Tax ({invoiceWithItems.invoice.taxRate || 10}%):</span>
+                      <span>${parseFloat(invoiceWithItems.invoice.taxAmount || "0").toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between font-bold">
                       <span>Total:</span>
-                      <span>${invoiceWithItems.invoice.total.toFixed(2)}</span>
+                      <span>${parseFloat(invoiceWithItems.invoice.totalAmount || "0").toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -803,7 +803,7 @@ export default function Invoices() {
                       {invoice.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">${invoice.total.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">${parseFloat(invoice.totalAmount || "0").toFixed(2)}</TableCell>
                   <TableCell className="text-right space-x-1">
                     <Button variant="ghost" size="sm" onClick={() => handleViewClick(invoice)}>
                       <Eye className="h-4 w-4" />
