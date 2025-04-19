@@ -52,12 +52,14 @@ export default function Invoices() {
   // Form state
   const [newInvoice, setNewInvoice] = useState<Partial<InsertInvoice>>({
     customerId: 0,
+    invoiceNumber: `INV-${Math.floor(Math.random() * 10000)}`,
     issueDate: new Date().toISOString().substring(0, 10),
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10),
     status: "draft",
-    subtotal: 0,
-    tax: 0,
-    total: 0,
+    subtotal: "0",
+    taxRate: "10",
+    taxAmount: "0",
+    totalAmount: "0",
     notes: "",
   });
 
@@ -67,9 +69,6 @@ export default function Invoices() {
     issueDate: "",
     dueDate: "",
     status: "",
-    subtotal: 0,
-    tax: 0,
-    total: 0,
     notes: "",
   });
 
@@ -277,14 +276,14 @@ export default function Invoices() {
 
     // Update invoice totals
     const subtotal = invoiceItems.reduce((sum, item) => sum + item.amount, 0) + amount;
-    const tax = subtotal * 0.1; // 10% tax rate
-    const total = subtotal + tax;
+    const taxAmount = subtotal * 0.1; // 10% tax rate
+    const totalAmount = subtotal + taxAmount;
 
     setNewInvoice({
       ...newInvoice,
-      subtotal,
-      tax,
-      total,
+      subtotal: subtotal.toString(),
+      taxAmount: taxAmount.toString(),
+      totalAmount: totalAmount.toString(),
     });
   };
 
@@ -296,14 +295,14 @@ export default function Invoices() {
 
     // Update invoice totals
     const subtotal = updatedItems.reduce((sum, item) => sum + item.amount, 0);
-    const tax = subtotal * 0.1; // 10% tax rate
-    const total = subtotal + tax;
+    const taxAmount = subtotal * 0.1; // 10% tax rate
+    const totalAmount = subtotal + taxAmount;
 
     setNewInvoice({
       ...newInvoice,
-      subtotal,
-      tax,
-      total,
+      subtotal: subtotal.toString(),
+      taxAmount: taxAmount.toString(),
+      totalAmount: totalAmount.toString(),
     });
   };
 
@@ -347,12 +346,14 @@ export default function Invoices() {
   const resetNewInvoiceForm = () => {
     setNewInvoice({
       customerId: 0,
+      invoiceNumber: `INV-${Math.floor(Math.random() * 10000)}`,
       issueDate: new Date().toISOString().substring(0, 10),
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10),
       status: "draft",
-      subtotal: 0,
-      tax: 0,
-      total: 0,
+      subtotal: "0",
+      taxRate: "10",
+      taxAmount: "0", 
+      totalAmount: "0",
       notes: "",
     });
     setInvoiceItems([]);
@@ -564,15 +565,15 @@ export default function Invoices() {
                     <div className="w-64 space-y-2">
                       <div className="flex justify-between">
                         <span>Subtotal:</span>
-                        <span>${newInvoice.subtotal?.toFixed(2)}</span>
+                        <span>${parseFloat(newInvoice.subtotal || "0").toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Tax (10%):</span>
-                        <span>${newInvoice.tax?.toFixed(2)}</span>
+                        <span>Tax ({newInvoice.taxRate || 10}%):</span>
+                        <span>${parseFloat(newInvoice.taxAmount || "0").toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between font-bold">
                         <span>Total:</span>
-                        <span>${newInvoice.total?.toFixed(2)}</span>
+                        <span>${parseFloat(newInvoice.totalAmount || "0").toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
