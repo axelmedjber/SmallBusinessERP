@@ -3,6 +3,10 @@ import { Route, Switch, Link } from "wouter";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 import FinancialHealth from "./pages/FinancialHealth";
+import Customers from "./pages/Customers";
+import Invoices from "./pages/Invoices";
+import Inventory from "./pages/Inventory";
+import Users from "./pages/Users";
 import AuthPage from "./pages/auth-page";
 import NotFound from "./pages/not-found";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -31,7 +35,7 @@ import {
   Calendar as CalendarIcon, 
   TrendingUp, 
   Menu, 
-  Users, 
+  Users as UsersIcon, 
   FileText, 
   Package, 
   Settings, 
@@ -56,9 +60,10 @@ function App() {
                 <ProtectedRoute path="/" component={Dashboard} />
                 <ProtectedRoute path="/calendar" component={Calendar} />
                 <ProtectedRoute path="/financial-health" component={FinancialHealth} />
-                <ProtectedRoute path="/customers" component={Dashboard} roles={["admin", "manager"]} />
-                <ProtectedRoute path="/invoices" component={Dashboard} roles={["admin", "manager", "employee"]} />
-                <ProtectedRoute path="/inventory" component={Dashboard} roles={["admin", "manager"]} />
+                <ProtectedRoute path="/customers" component={Customers} roles={["admin", "manager"]} />
+                <ProtectedRoute path="/invoices" component={Invoices} roles={["admin", "manager", "employee"]} />
+                <ProtectedRoute path="/inventory" component={Inventory} roles={["admin", "manager"]} />
+                <ProtectedRoute path="/users" component={Users} roles={["admin"]} />
                 <ProtectedRoute path="/settings" component={Dashboard} roles={["admin"]} />
                 <Route component={NotFound} />
               </Switch>
@@ -145,12 +150,20 @@ function AppHeader() {
                     </DropdownMenuItem>
                   </Link>
                   {user?.role === "admin" && (
-                    <Link href="/settings">
-                      <DropdownMenuItem className="cursor-pointer">
-                        <Settings className="w-4 h-4 mr-2" />
-                        Settings
-                      </DropdownMenuItem>
-                    </Link>
+                    <>
+                      <Link href="/users">
+                        <DropdownMenuItem className="cursor-pointer">
+                          <UsersIcon className="w-4 h-4 mr-2" />
+                          Users
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link href="/settings">
+                        <DropdownMenuItem className="cursor-pointer">
+                          <Settings className="w-4 h-4 mr-2" />
+                          Settings
+                        </DropdownMenuItem>
+                      </Link>
+                    </>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -210,12 +223,20 @@ function AppHeader() {
                         </div>
                       </Link>
                       {user?.role === "admin" && (
-                        <Link href="/settings">
-                          <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
-                            <Settings className="w-4 h-4 mr-2" />
-                            Settings
-                          </div>
-                        </Link>
+                        <>
+                          <Link href="/users">
+                            <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
+                              <UsersIcon className="w-4 h-4 mr-2" />
+                              Users
+                            </div>
+                          </Link>
+                          <Link href="/settings">
+                            <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
+                              <Settings className="w-4 h-4 mr-2" />
+                              Settings
+                            </div>
+                          </Link>
+                        </>
                       )}
                     </nav>
                   </div>
