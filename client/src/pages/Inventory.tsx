@@ -1,7 +1,16 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -12,32 +21,31 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Plus, Package, Search, AlertTriangle } from "lucide-react";
-import { useLanguage } from "@/hooks/use-language";
-import { InventoryItem, InsertInventoryItem, InventoryCategory } from "@shared/schema";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Package,
+  Search,
+  Edit,
+  Trash2,
+  Plus,
+  AlertTriangle,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import {
+  InventoryItem,
+  InventoryCategory,
+  InsertInventoryItem,
+} from "@shared/schema";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Inventory() {
-  const { t } = useLanguage();
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -116,9 +124,9 @@ export default function Inventory() {
         description: "",
         sku: "",
         categoryId: 0,
-        price: 0,
-        cost: 0,
-        quantity: 0,
+        unitPrice: "0.00",
+        costPrice: "0.00",
+        quantityInStock: 0,
         reorderLevel: 0,
       });
       toast({
@@ -240,17 +248,17 @@ export default function Inventory() {
       description: item.description || "",
       sku: item.sku || "",
       categoryId: item.categoryId,
-      price: item.price,
-      cost: item.cost,
-      quantity: item.quantity,
-      reorderLevel: item.reorderLevel,
+      unitPrice: item.unitPrice,
+      costPrice: item.costPrice || "0.00",
+      quantityInStock: item.quantityInStock,
+      reorderLevel: item.reorderLevel || 10,
     });
     setIsEditDialogOpen(true);
   };
 
   const handleUpdateStockClick = (item: InventoryItem) => {
     setSelectedItem(item);
-    setStockQuantity(item.quantity);
+    setStockQuantity(item.quantityInStock);
     setIsUpdateStockDialogOpen(true);
   };
 
@@ -269,7 +277,8 @@ export default function Inventory() {
   );
 
   // Get category name by ID
-  const getCategoryName = (categoryId: number) => {
+  const getCategoryName = (categoryId: number | null) => {
+    if (!categoryId) return "Uncategorized";
     const category = categories.find((c) => c.id === categoryId);
     return category ? category.name : "Unknown";
   };
@@ -320,7 +329,7 @@ export default function Inventory() {
                   </Label>
                   <Input
                     id="description"
-                    value={newItem.description}
+                    value={newItem.description || ""}
                     onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
                     className="col-span-3"
                   />
@@ -331,7 +340,7 @@ export default function Inventory() {
                   </Label>
                   <Input
                     id="sku"
-                    value={newItem.sku}
+                    value={newItem.sku || ""}
                     onChange={(e) => setNewItem({ ...newItem, sku: e.target.value })}
                     className="col-span-3"
                   />
@@ -357,38 +366,40 @@ export default function Inventory() {
                   </Select>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="price" className="text-right">
-                    Price
+                  <Label htmlFor="unitPrice" className="text-right">
+                    Unit Price
                   </Label>
                   <Input
-                    id="price"
+                    id="unitPrice"
                     type="number"
-                    value={newItem.price?.toString()}
-                    onChange={(e) => setNewItem({ ...newItem, price: parseFloat(e.target.value) })}
+                    step="0.01"
+                    value={newItem.unitPrice}
+                    onChange={(e) => setNewItem({ ...newItem, unitPrice: e.target.value })}
                     className="col-span-3"
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="cost" className="text-right">
-                    Cost
+                  <Label htmlFor="costPrice" className="text-right">
+                    Cost Price
                   </Label>
                   <Input
-                    id="cost"
+                    id="costPrice"
                     type="number"
-                    value={newItem.cost?.toString()}
-                    onChange={(e) => setNewItem({ ...newItem, cost: parseFloat(e.target.value) })}
+                    step="0.01"
+                    value={newItem.costPrice}
+                    onChange={(e) => setNewItem({ ...newItem, costPrice: e.target.value })}
                     className="col-span-3"
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="quantity" className="text-right">
+                  <Label htmlFor="quantityInStock" className="text-right">
                     Quantity
                   </Label>
                   <Input
-                    id="quantity"
+                    id="quantityInStock"
                     type="number"
-                    value={newItem.quantity?.toString()}
-                    onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value) })}
+                    value={newItem.quantityInStock}
+                    onChange={(e) => setNewItem({ ...newItem, quantityInStock: parseInt(e.target.value) })}
                     className="col-span-3"
                   />
                 </div>
@@ -399,17 +410,17 @@ export default function Inventory() {
                   <Input
                     id="reorderLevel"
                     type="number"
-                    value={newItem.reorderLevel?.toString()}
+                    value={newItem.reorderLevel}
                     onChange={(e) => setNewItem({ ...newItem, reorderLevel: parseInt(e.target.value) })}
                     className="col-span-3"
                   />
                 </div>
               </div>
-              <DialogFooter>
-                <Button type="submit" onClick={handleCreateItem} disabled={createItemMutation.isPending}>
+              <div className="flex justify-end">
+                <Button onClick={handleCreateItem} disabled={createItemMutation.isPending}>
                   {createItemMutation.isPending ? "Creating..." : "Create Item"}
                 </Button>
-              </DialogFooter>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
@@ -418,18 +429,90 @@ export default function Inventory() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
         <TabsList>
           <TabsTrigger value="all">All Items</TabsTrigger>
-          <TabsTrigger value="low" className="flex items-center gap-1">
-            Low Stock <AlertTriangle className="h-4 w-4 text-yellow-500" />
-          </TabsTrigger>
+          <TabsTrigger value="low">Low Stock</TabsTrigger>
         </TabsList>
       </Tabs>
+
+      {isItemsLoading ? (
+        <div className="text-center py-8">Loading inventory items...</div>
+      ) : filteredItems.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          No inventory items found. {searchQuery && "Try a different search term."}
+        </div>
+      ) : (
+        <div className="border rounded-lg">
+          <Table>
+            <TableCaption>Inventory items list</TableCaption>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>SKU</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead className="text-right">Unit Price</TableHead>
+                <TableHead className="text-right">Cost Price</TableHead>
+                <TableHead className="text-right">Quantity</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredItems.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium">
+                    {item.name}
+                    {item.quantityInStock <= (item.reorderLevel || 10) && (
+                      <Badge variant="destructive" className="ml-2">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Low Stock
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>{item.sku || "-"}</TableCell>
+                  <TableCell>{getCategoryName(item.categoryId)}</TableCell>
+                  <TableCell className="text-right">${parseFloat(item.unitPrice).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">
+                    {item.costPrice ? `$${parseFloat(item.costPrice).toFixed(2)}` : "-"}
+                  </TableCell>
+                  <TableCell className="text-right">{item.quantityInStock}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUpdateStockClick(item)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditClick(item)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteClick(item)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {/* Edit Item Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Inventory Item</DialogTitle>
-            <DialogDescription>Update inventory item information.</DialogDescription>
+            <DialogDescription>
+              Update the details of the selected inventory item.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
@@ -449,7 +532,7 @@ export default function Inventory() {
               </Label>
               <Input
                 id="edit-description"
-                value={editItem.description}
+                value={editItem.description || ""}
                 onChange={(e) => setEditItem({ ...editItem, description: e.target.value })}
                 className="col-span-3"
               />
@@ -460,7 +543,7 @@ export default function Inventory() {
               </Label>
               <Input
                 id="edit-sku"
-                value={editItem.sku}
+                value={editItem.sku || ""}
                 onChange={(e) => setEditItem({ ...editItem, sku: e.target.value })}
                 className="col-span-3"
               />
@@ -486,26 +569,40 @@ export default function Inventory() {
               </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-price" className="text-right">
-                Price
+              <Label htmlFor="edit-unitPrice" className="text-right">
+                Unit Price
               </Label>
               <Input
-                id="edit-price"
+                id="edit-unitPrice"
                 type="number"
-                value={editItem.price?.toString()}
-                onChange={(e) => setEditItem({ ...editItem, price: parseFloat(e.target.value) })}
+                step="0.01"
+                value={editItem.unitPrice}
+                onChange={(e) => setEditItem({ ...editItem, unitPrice: e.target.value })}
                 className="col-span-3"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-cost" className="text-right">
-                Cost
+              <Label htmlFor="edit-costPrice" className="text-right">
+                Cost Price
               </Label>
               <Input
-                id="edit-cost"
+                id="edit-costPrice"
                 type="number"
-                value={editItem.cost?.toString()}
-                onChange={(e) => setEditItem({ ...editItem, cost: parseFloat(e.target.value) })}
+                step="0.01"
+                value={editItem.costPrice}
+                onChange={(e) => setEditItem({ ...editItem, costPrice: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-quantityInStock" className="text-right">
+                Quantity
+              </Label>
+              <Input
+                id="edit-quantityInStock"
+                type="number"
+                value={editItem.quantityInStock}
+                onChange={(e) => setEditItem({ ...editItem, quantityInStock: parseInt(e.target.value) })}
                 className="col-span-3"
               />
             </div>
@@ -516,17 +613,17 @@ export default function Inventory() {
               <Input
                 id="edit-reorderLevel"
                 type="number"
-                value={editItem.reorderLevel?.toString()}
+                value={editItem.reorderLevel}
                 onChange={(e) => setEditItem({ ...editItem, reorderLevel: parseInt(e.target.value) })}
                 className="col-span-3"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button type="submit" onClick={handleUpdateItem} disabled={updateItemMutation.isPending}>
+          <div className="flex justify-end">
+            <Button onClick={handleUpdateItem} disabled={updateItemMutation.isPending}>
               {updateItemMutation.isPending ? "Updating..." : "Update Item"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -534,9 +631,9 @@ export default function Inventory() {
       <Dialog open={isUpdateStockDialogOpen} onOpenChange={setIsUpdateStockDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Update Stock</DialogTitle>
+            <DialogTitle>Update Stock Quantity</DialogTitle>
             <DialogDescription>
-              Update stock quantity for {selectedItem?.name}.
+              Update the stock quantity for {selectedItem?.name}.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -553,81 +650,13 @@ export default function Inventory() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button type="submit" onClick={handleUpdateStock} disabled={updateStockMutation.isPending}>
+          <div className="flex justify-end">
+            <Button onClick={handleUpdateStock} disabled={updateStockMutation.isPending}>
               {updateStockMutation.isPending ? "Updating..." : "Update Stock"}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
-
-      {isItemsLoading || isCategoriesLoading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow overflow-x-auto">
-          <Table>
-            <TableCaption>
-              {activeTab === "low" ? "Low stock inventory items" : "All inventory items"}
-            </TableCaption>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[80px]">ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-                <TableHead className="text-right">Cost</TableHead>
-                <TableHead className="text-right">Stock</TableHead>
-                <TableHead className="text-right">Reorder At</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.id}</TableCell>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell>{item.sku || "-"}</TableCell>
-                  <TableCell>{getCategoryName(item.categoryId)}</TableCell>
-                  <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">${item.cost.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">
-                    <span className={item.quantity <= item.reorderLevel ? "text-red-600 font-bold" : ""}>
-                      {item.quantity}
-                    </span>
-                    {item.quantity <= item.reorderLevel && (
-                      <Badge variant="outline" className="ml-2 text-red-500 border-red-200 bg-red-50">
-                        Low
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">{item.reorderLevel}</TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <Button variant="ghost" size="sm" onClick={() => handleUpdateStockClick(item)}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleEditClick(item)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(item)}>
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredItems.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center">
-                    No inventory items found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
     </div>
   );
 }
