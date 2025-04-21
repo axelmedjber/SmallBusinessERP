@@ -53,9 +53,9 @@ export default function Inventory() {
     description: "",
     sku: "",
     categoryId: 0,
-    price: 0,
-    cost: 0,
-    quantity: 0,
+    unitPrice: "0.00",
+    costPrice: "0.00",
+    quantityInStock: 0,
     reorderLevel: 0,
   });
 
@@ -65,9 +65,9 @@ export default function Inventory() {
     description: "",
     sku: "",
     categoryId: 0,
-    price: 0,
-    cost: 0,
-    quantity: 0,
+    unitPrice: "0.00",
+    costPrice: "0.00",
+    quantityInStock: 0,
     reorderLevel: 0,
   });
 

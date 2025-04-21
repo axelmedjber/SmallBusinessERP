@@ -14,39 +14,38 @@ import { useLanguage } from "@/hooks/use-language";
 import { AuthProvider } from "@/hooks/use-auth";
 import { useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetDescription, 
-  SheetHeader, 
-  SheetTitle, 
-  SheetTrigger 
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
 } from "@/components/ui/sheet";
-import { 
-  Home, 
-  Calendar as CalendarIcon, 
-  TrendingUp, 
-  Menu, 
-  Users as UsersIcon, 
-  FileText, 
-  Package, 
-  Settings, 
-  LogOut, 
+import {
+  Home,
+  Calendar as CalendarIcon,
+  TrendingUp,
+  Menu,
+  Users as UsersIcon,
+  FileText,
+  Package,
+  Settings,
+  LogOut,
   User,
-  ChevronDown 
+  ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-// Main App component with routing
 function App() {
   return (
     <AuthProvider>
@@ -56,7 +55,9 @@ function App() {
             <AppHeader />
             <div className="mt-6">
               <Switch>
-                <Route path="/auth" component={AuthPage} />
+                <Route path="/auth">
+                  <AuthPage />
+                </Route>
                 <ProtectedRoute path="/" component={Dashboard} />
                 <ProtectedRoute path="/calendar" component={Calendar} />
                 <ProtectedRoute path="/financial-health" component={FinancialHealth} />
@@ -65,7 +66,9 @@ function App() {
                 <ProtectedRoute path="/inventory" component={Inventory} roles={["admin", "manager"]} />
                 <ProtectedRoute path="/users" component={Users} roles={["admin"]} />
                 <ProtectedRoute path="/settings" component={Dashboard} roles={["admin"]} />
-                <Route component={NotFound} />
+                <Route>
+                  <NotFound />
+                </Route>
               </Switch>
             </div>
           </div>
@@ -75,64 +78,40 @@ function App() {
   );
 }
 
-// Header with navigation
 function AppHeader() {
   const { t, language, direction } = useLanguage();
   const { user, logoutMutation } = useAuth();
-  
-  const handleLogout = () => {
-    logoutMutation.mutate();
-  };
-  
+
+  const handleLogout = () => logoutMutation.mutate();
+
   const getUserInitials = () => {
     if (!user) return "?";
     if (user.fullName) {
       const names = user.fullName.split(" ");
-      if (names.length > 1) {
-        return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
-      }
-      return user.fullName.slice(0, 2).toUpperCase();
+      return names.length > 1
+        ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
+        : user.fullName.slice(0, 2).toUpperCase();
     }
-    return user.username.slice(0, 2).toUpperCase();
+    return user.username?.slice(0, 2).toUpperCase() || "?";
   };
-  
+
   return (
-    <div className={`${direction === 'rtl' ? 'text-right' : 'text-left'}`}>
+    <div className={direction === "rtl" ? "text-right" : "text-left"}>
       <div className="flex justify-between items-center border-b pb-4 mb-4">
         <div className="flex items-center">
           <h1 className="text-2xl sm:text-3xl font-bold mr-6">{t.title}</h1>
-          
+
           {/* Desktop Navigation */}
           {user && (
             <nav className="hidden md:flex space-x-4">
-              <Link href="/">
-                <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
-                  <Home className="w-4 h-4 mr-2" />
-                  {t.dashboard}
-                </div>
-              </Link>
-              <Link href="/calendar">
-                <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
-                  <CalendarIcon className="w-4 h-4 mr-2" />
-                  {t.calendar}
-                </div>
-              </Link>
-              <Link href="/financial-health">
-                <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  {t.financialHealth}
-                </div>
-              </Link>
-              
+              <NavItem to="/" icon={<Home className="w-4 h-4 mr-2" />} label={t.dashboard} />
+              <NavItem to="/calendar" icon={<CalendarIcon className="w-4 h-4 mr-2" />} label={t.calendar} />
+              <NavItem to="/financial-health" icon={<TrendingUp className="w-4 h-4 mr-2" />} label={t.financialHealth} />
+
               {user?.role === "admin" && (
-                <Link href="/users">
-                  <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
-                    <UsersIcon className="w-4 h-4 mr-2" />
-                    Users
-                  </div>
-                </Link>
+                <NavItem to="/users" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Users" />
               )}
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="px-3 py-2 text-sm font-medium">
@@ -140,117 +119,41 @@ function AppHeader() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <Link href="/customers">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Users className="w-4 h-4 mr-2" />
-                      Customers
-                    </DropdownMenuItem>
-                  </Link>
-                  <Link href="/invoices">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <FileText className="w-4 h-4 mr-2" />
-                      Invoices
-                    </DropdownMenuItem>
-                  </Link>
-                  <Link href="/inventory">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Package className="w-4 h-4 mr-2" />
-                      Inventory
-                    </DropdownMenuItem>
-                  </Link>
+                  <DropdownLink to="/customers" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Customers" />
+                  <DropdownLink to="/invoices" icon={<FileText className="w-4 h-4 mr-2" />} label="Invoices" />
+                  <DropdownLink to="/inventory" icon={<Package className="w-4 h-4 mr-2" />} label="Inventory" />
                   {user?.role === "admin" && (
-                    <Link href="/settings">
-                      <DropdownMenuItem className="cursor-pointer">
-                        <Settings className="w-4 h-4 mr-2" />
-                        Settings
-                      </DropdownMenuItem>
-                    </Link>
+                    <DropdownLink to="/settings" icon={<Settings className="w-4 h-4 mr-2" />} label="Settings" />
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </nav>
           )}
-          
-          {/* Mobile Navigation */}
-          {user && (
-            <div className="md:hidden">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left">
-                  <SheetHeader>
-                    <SheetTitle>{t.title}</SheetTitle>
-                    <SheetDescription>Navigation Menu</SheetDescription>
-                  </SheetHeader>
-                  <div className="py-4">
-                    <nav className="flex flex-col space-y-3">
-                      <Link href="/">
-                        <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
-                          <Home className="w-4 h-4 mr-2" />
-                          {t.dashboard}
-                        </div>
-                      </Link>
-                      <Link href="/calendar">
-                        <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
-                          <CalendarIcon className="w-4 h-4 mr-2" />
-                          {t.calendar}
-                        </div>
-                      </Link>
-                      <Link href="/financial-health">
-                        <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
-                          <TrendingUp className="w-4 h-4 mr-2" />
-                          {t.financialHealth}
-                        </div>
-                      </Link>
-                      <Link href="/customers">
-                        <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
-                          <Users className="w-4 h-4 mr-2" />
-                          Customers
-                        </div>
-                      </Link>
-                      <Link href="/invoices">
-                        <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
-                          <FileText className="w-4 h-4 mr-2" />
-                          Invoices
-                        </div>
-                      </Link>
-                      <Link href="/inventory">
-                        <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
-                          <Package className="w-4 h-4 mr-2" />
-                          Inventory
-                        </div>
-                      </Link>
-                      {user?.role === "admin" && (
-                        <>
-                          <Link href="/users">
-                            <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
-                              <UsersIcon className="w-4 h-4 mr-2" />
-                              Users
-                            </div>
-                          </Link>
-                          <Link href="/settings">
-                            <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
-                              <Settings className="w-4 h-4 mr-2" />
-                              Settings
-                            </div>
-                          </Link>
-                        </>
-                      )}
-                    </nav>
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
-          )}
         </div>
-        
-        <div className="flex items-center">
-          <LanguageSwitcher />
+
+        {/* User Avatar & Dropdown */}
+        <div className="flex items-center space-x-2">
+          <div className="flex gap-2">
+            <button
+              className={`px-2 py-1 text-xs rounded-md ${language === 'en' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setLanguage('en')}
+            >
+              EN
+            </button>
+            <button
+              className={`px-2 py-1 text-xs rounded-md ${language === 'fr' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setLanguage('fr')}
+            >
+              FR
+            </button>
+            <button
+              className={`px-2 py-1 text-xs rounded-md ${language === 'ar' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
+              onClick={() => setLanguage('ar')}
+            >
+              عربي
+            </button>
+          </div>
           
-          {/* User Menu */}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -264,9 +167,7 @@ function AppHeader() {
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{user.fullName || user.username}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user.email}
-                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -293,36 +194,56 @@ function AppHeader() {
             </Link>
           )}
         </div>
+
+        {/* Mobile Navigation */}
+        {user && (
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left">
+                <SheetHeader>
+                  <SheetTitle>{t.title}</SheetTitle>
+                  <SheetDescription>Navigation Menu</SheetDescription>
+                </SheetHeader>
+                <div className="py-4 space-y-3">
+                  <NavItem to="/" icon={<Home className="w-4 h-4 mr-2" />} label={t.dashboard} />
+                  <NavItem to="/calendar" icon={<CalendarIcon className="w-4 h-4 mr-2" />} label={t.calendar} />
+                  <NavItem to="/financial-health" icon={<TrendingUp className="w-4 h-4 mr-2" />} label={t.financialHealth} />
+                  {/* Add other mobile links as needed */}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-// Simple language switcher component
-function LanguageSwitcher() {
-  const { language, setLanguage } = useLanguage();
-  
+// Reusable components for navigation
+function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
   return (
-    <div className="flex gap-2">
-      <button
-        className={`px-2 py-1 text-xs rounded-md ${language === 'en' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
-        onClick={() => setLanguage('en')}
-      >
-        EN
-      </button>
-      <button
-        className={`px-2 py-1 text-xs rounded-md ${language === 'fr' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
-        onClick={() => setLanguage('fr')}
-      >
-        FR
-      </button>
-      <button
-        className={`px-2 py-1 text-xs rounded-md ${language === 'ar' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
-        onClick={() => setLanguage('ar')}
-      >
-        عربي
-      </button>
-    </div>
+    <Link href={to}>
+      <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
+        {icon}
+        {label}
+      </div>
+    </Link>
+  );
+}
+
+function DropdownLink({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
+  return (
+    <Link href={to}>
+      <DropdownMenuItem className="cursor-pointer">
+        {icon}
+        {label}
+      </DropdownMenuItem>
+    </Link>
   );
 }
 
