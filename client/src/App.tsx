@@ -79,7 +79,7 @@ function App() {
 }
 
 function AppHeader() {
-  const { t, language, direction } = useLanguage();
+  const { t, language, direction, setLanguage } = useLanguage();
   const { user, logoutMutation } = useAuth();
 
   const handleLogout = () => logoutMutation.mutate();
@@ -107,32 +107,20 @@ function AppHeader() {
               <NavItem to="/" icon={<Home className="w-4 h-4 mr-2" />} label={t.dashboard} />
               <NavItem to="/calendar" icon={<CalendarIcon className="w-4 h-4 mr-2" />} label={t.calendar} />
               <NavItem to="/financial-health" icon={<TrendingUp className="w-4 h-4 mr-2" />} label={t.financialHealth} />
-
+              <NavItem to="/customers" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Customers" />
+              <NavItem to="/invoices" icon={<FileText className="w-4 h-4 mr-2" />} label="Invoices" />
+              <NavItem to="/inventory" icon={<Package className="w-4 h-4 mr-2" />} label="Inventory" />
+              
               {user?.role === "admin" && (
                 <NavItem to="/users" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Users" />
               )}
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="px-3 py-2 text-sm font-medium">
-                    More <ChevronDown className="w-4 h-4 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownLink to="/customers" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Customers" />
-                  <DropdownLink to="/invoices" icon={<FileText className="w-4 h-4 mr-2" />} label="Invoices" />
-                  <DropdownLink to="/inventory" icon={<Package className="w-4 h-4 mr-2" />} label="Inventory" />
-                  {user?.role === "admin" && (
-                    <DropdownLink to="/settings" icon={<Settings className="w-4 h-4 mr-2" />} label="Settings" />
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
             </nav>
           )}
         </div>
 
-        {/* User Avatar & Dropdown */}
-        <div className="flex items-center space-x-2">
+        {/* Language and User Menu */}
+        <div className="flex items-center space-x-4">
+          {/* Language Switcher */}
           <div className="flex gap-2">
             <button
               className={`px-2 py-1 text-xs rounded-md ${language === 'en' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
@@ -154,10 +142,11 @@ function AppHeader() {
             </button>
           </div>
           
+          {/* User Profile Menu */}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-4">
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback>{getUserInitials()}</AvatarFallback>
                   </Avatar>
@@ -188,7 +177,7 @@ function AppHeader() {
             </DropdownMenu>
           ) : (
             <Link href="/auth">
-              <Button variant="default" size="sm" className="ml-4">
+              <Button variant="default" size="sm">
                 Login
               </Button>
             </Link>
@@ -213,7 +202,16 @@ function AppHeader() {
                   <NavItem to="/" icon={<Home className="w-4 h-4 mr-2" />} label={t.dashboard} />
                   <NavItem to="/calendar" icon={<CalendarIcon className="w-4 h-4 mr-2" />} label={t.calendar} />
                   <NavItem to="/financial-health" icon={<TrendingUp className="w-4 h-4 mr-2" />} label={t.financialHealth} />
-                  {/* Add other mobile links as needed */}
+                  <NavItem to="/customers" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Customers" />
+                  <NavItem to="/invoices" icon={<FileText className="w-4 h-4 mr-2" />} label="Invoices" />
+                  <NavItem to="/inventory" icon={<Package className="w-4 h-4 mr-2" />} label="Inventory" />
+                  
+                  {user?.role === "admin" && (
+                    <>
+                      <NavItem to="/users" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Users" />
+                      <NavItem to="/settings" icon={<Settings className="w-4 h-4 mr-2" />} label="Settings" />
+                    </>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
@@ -224,7 +222,7 @@ function AppHeader() {
   );
 }
 
-// Reusable components for navigation
+// Reusable component for navigation items
 function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
   return (
     <Link href={to}>
@@ -232,17 +230,6 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
         {icon}
         {label}
       </div>
-    </Link>
-  );
-}
-
-function DropdownLink({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
-  return (
-    <Link href={to}>
-      <DropdownMenuItem className="cursor-pointer">
-        {icon}
-        {label}
-      </DropdownMenuItem>
     </Link>
   );
 }
