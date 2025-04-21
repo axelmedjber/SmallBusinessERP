@@ -107,29 +107,42 @@ function AppHeader() {
               <div className="md:hidden ml-2">
                 <Sheet>
                   <SheetTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <Menu className="h-5 w-5" />
+                    <Button variant="outline" size="sm" className="px-2 flex items-center">
+                      <Menu className="h-4 w-4 mr-1" />
+                      <span className="text-xs">Menu</span>
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="left">
+                  <SheetContent side="left" className="w-[85vw] max-w-[300px]">
                     <SheetHeader>
-                      <SheetTitle>{t.title}</SheetTitle>
-                      <SheetDescription>Navigation Menu</SheetDescription>
+                      <SheetTitle className="text-left">{t.title}</SheetTitle>
+                      <SheetDescription className="text-left">Navigation Menu</SheetDescription>
                     </SheetHeader>
-                    <div className="py-4 space-y-3">
-                      <NavItem to="/" icon={<Home className="w-4 h-4 mr-2" />} label={t.dashboard} />
-                      <NavItem to="/calendar" icon={<CalendarIcon className="w-4 h-4 mr-2" />} label={t.calendar} />
-                      <NavItem to="/financial-health" icon={<TrendingUp className="w-4 h-4 mr-2" />} label={t.financialHealth} />
-                      <NavItem to="/customers" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Customers" />
-                      <NavItem to="/invoices" icon={<FileText className="w-4 h-4 mr-2" />} label="Invoices" />
-                      <NavItem to="/inventory" icon={<Package className="w-4 h-4 mr-2" />} label="Inventory" />
+                    <div className="py-4 space-y-1">
+                      <MobileNavItem to="/" icon={<Home className="w-4 h-4 mr-2" />} label={t.dashboard} />
+                      <MobileNavItem to="/calendar" icon={<CalendarIcon className="w-4 h-4 mr-2" />} label={t.calendar} />
+                      <MobileNavItem to="/financial-health" icon={<TrendingUp className="w-4 h-4 mr-2" />} label={t.financialHealth} />
+                      <MobileNavItem to="/customers" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Customers" />
+                      <MobileNavItem to="/invoices" icon={<FileText className="w-4 h-4 mr-2" />} label="Invoices" />
+                      <MobileNavItem to="/inventory" icon={<Package className="w-4 h-4 mr-2" />} label="Inventory" />
                       
                       {user?.role === "admin" && (
                         <>
-                          <NavItem to="/users" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Users" />
-                          <NavItem to="/settings" icon={<Settings className="w-4 h-4 mr-2" />} label="Settings" />
+                          <div className="h-px bg-gray-200 my-2" />
+                          <MobileNavItem to="/users" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Users" />
+                          <MobileNavItem to="/settings" icon={<Settings className="w-4 h-4 mr-2" />} label="Settings" />
                         </>
                       )}
+                      
+                      <div className="h-px bg-gray-200 my-2" />
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        className="w-full justify-start" 
+                        onClick={handleLogout}
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Log Out
+                      </Button>
                     </div>
                   </SheetContent>
                 </Sheet>
@@ -227,18 +240,22 @@ function AppHeader() {
 
         {/* Desktop Navigation */}
         {user && (
-          <nav className="hidden md:flex overflow-x-auto pb-2 space-x-2">
-            <NavItem to="/" icon={<Home className="w-4 h-4 mr-2" />} label={t.dashboard} />
-            <NavItem to="/calendar" icon={<CalendarIcon className="w-4 h-4 mr-2" />} label={t.calendar} />
-            <NavItem to="/financial-health" icon={<TrendingUp className="w-4 h-4 mr-2" />} label={t.financialHealth} />
-            <NavItem to="/customers" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Customers" />
-            <NavItem to="/invoices" icon={<FileText className="w-4 h-4 mr-2" />} label="Invoices" />
-            <NavItem to="/inventory" icon={<Package className="w-4 h-4 mr-2" />} label="Inventory" />
-            
-            {user?.role === "admin" && (
-              <NavItem to="/users" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Users" />
-            )}
-          </nav>
+          <div className="hidden md:block w-full pb-2">
+            <div className="border p-1 rounded-md bg-gray-50 overflow-x-auto">
+              <div className="flex min-w-max gap-1">
+                <NavItem to="/" icon={<Home className="w-4 h-4 mr-2" />} label={t.dashboard} />
+                <NavItem to="/calendar" icon={<CalendarIcon className="w-4 h-4 mr-2" />} label={t.calendar} />
+                <NavItem to="/financial-health" icon={<TrendingUp className="w-4 h-4 mr-2" />} label={t.financialHealth} />
+                <NavItem to="/customers" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Customers" />
+                <NavItem to="/invoices" icon={<FileText className="w-4 h-4 mr-2" />} label="Invoices" />
+                <NavItem to="/inventory" icon={<Package className="w-4 h-4 mr-2" />} label="Inventory" />
+                
+                {user?.role === "admin" && (
+                  <NavItem to="/users" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Users" />
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -253,6 +270,20 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
         {icon}
         <span className="truncate max-w-[130px] sm:max-w-none">{label}</span>
       </div>
+    </Link>
+  );
+}
+
+// Mobile navigation item with a different style
+function MobileNavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
+  return (
+    <Link href={to}>
+      <Button variant="ghost" size="sm" className="w-full justify-start py-5 px-3 h-auto">
+        <div className="flex items-center">
+          {icon}
+          <span className="truncate text-sm">{label}</span>
+        </div>
+      </Button>
     </Link>
   );
 }
