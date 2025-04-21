@@ -329,7 +329,7 @@ export default function Inventory() {
                   </Label>
                   <Input
                     id="description"
-                    value={newItem.description || ""}
+                    value={newItem.description ?? ""}
                     onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
                     className="col-span-3"
                   />
@@ -340,7 +340,7 @@ export default function Inventory() {
                   </Label>
                   <Input
                     id="sku"
-                    value={newItem.sku || ""}
+                    value={newItem.sku ?? ""}
                     onChange={(e) => setNewItem({ ...newItem, sku: e.target.value })}
                     className="col-span-3"
                   />
@@ -386,7 +386,7 @@ export default function Inventory() {
                     id="costPrice"
                     type="number"
                     step="0.01"
-                    value={newItem.costPrice}
+                    value={newItem.costPrice ?? "0.00"}
                     onChange={(e) => setNewItem({ ...newItem, costPrice: e.target.value })}
                     className="col-span-3"
                   />
@@ -410,7 +410,7 @@ export default function Inventory() {
                   <Input
                     id="reorderLevel"
                     type="number"
-                    value={newItem.reorderLevel}
+                    value={newItem.reorderLevel ?? 10}
                     onChange={(e) => setNewItem({ ...newItem, reorderLevel: parseInt(e.target.value) })}
                     className="col-span-3"
                   />
@@ -589,7 +589,7 @@ export default function Inventory() {
                 id="edit-costPrice"
                 type="number"
                 step="0.01"
-                value={editItem.costPrice}
+                value={editItem.costPrice ?? "0.00"}
                 onChange={(e) => setEditItem({ ...editItem, costPrice: e.target.value })}
                 className="col-span-3"
               />
@@ -613,7 +613,7 @@ export default function Inventory() {
               <Input
                 id="edit-reorderLevel"
                 type="number"
-                value={editItem.reorderLevel}
+                value={editItem.reorderLevel ?? 10}
                 onChange={(e) => setEditItem({ ...editItem, reorderLevel: parseInt(e.target.value) })}
                 className="col-span-3"
               />
