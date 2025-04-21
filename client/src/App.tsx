@@ -238,11 +238,11 @@ function AppHeader() {
           </div>
         </div>
 
-        {/* Desktop Navigation */}
+        {/* Desktop Navigation - Fixed Tabbed Style */}
         {user && (
-          <div className="hidden md:block w-full pb-2">
-            <div className="border p-1 rounded-md bg-gray-50 overflow-x-auto">
-              <div className="flex min-w-max gap-1">
+          <div className="w-full mt-2">
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="flex min-w-max border-b">
                 <NavItem to="/" icon={<Home className="w-4 h-4 mr-2" />} label={t.dashboard} />
                 <NavItem to="/calendar" icon={<CalendarIcon className="w-4 h-4 mr-2" />} label={t.calendar} />
                 <NavItem to="/financial-health" icon={<TrendingUp className="w-4 h-4 mr-2" />} label={t.financialHealth} />
@@ -264,11 +264,18 @@ function AppHeader() {
 
 // Reusable component for navigation items
 function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
+  // Check if current path matches the link path
+  const isActive = typeof window !== 'undefined' && window.location.pathname === to;
+  
   return (
     <Link href={to}>
-      <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer whitespace-nowrap">
+      <div className={`flex items-center px-4 py-2 text-sm font-medium cursor-pointer whitespace-nowrap border-b-2 ${
+        isActive 
+          ? 'border-blue-500 text-blue-600' 
+          : 'border-transparent text-gray-700 hover:border-gray-300'
+      }`}>
         {icon}
-        <span className="truncate max-w-[130px] sm:max-w-none">{label}</span>
+        <span className="truncate max-w-[120px] sm:max-w-none">{label}</span>
       </div>
     </Link>
   );
@@ -276,9 +283,18 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
 
 // Mobile navigation item with a different style
 function MobileNavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
+  // Check if current path matches the link path
+  const isActive = typeof window !== 'undefined' && window.location.pathname === to;
+  
   return (
     <Link href={to}>
-      <Button variant="ghost" size="sm" className="w-full justify-start py-5 px-3 h-auto">
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className={`w-full justify-start py-3 px-3 h-auto ${
+          isActive ? 'bg-blue-50 text-blue-600' : ''
+        }`}
+      >
         <div className="flex items-center">
           {icon}
           <span className="truncate text-sm">{label}</span>
