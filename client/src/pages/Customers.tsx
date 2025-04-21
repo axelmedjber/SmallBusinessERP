@@ -324,7 +324,11 @@ export default function Customers() {
                         <div className="grid grid-cols-4 items-center gap-4">
                           <FormLabel className="text-right">Address</FormLabel>
                           <FormControl>
-                            <Input {...field} className="col-span-3" />
+                            <Input 
+                              {...field} 
+                              value={field.value || ''} 
+                              className="col-span-3" 
+                            />
                           </FormControl>
                         </div>
                         <FormMessage className="text-right mr-4" />
@@ -341,7 +345,7 @@ export default function Customers() {
                           <FormLabel className="text-right">Status</FormLabel>
                           <Select 
                             onValueChange={field.onChange}
-                            defaultValue={field.value}
+                            defaultValue={field.value || 'active'}
                           >
                             <FormControl>
                               <SelectTrigger className="col-span-3">
@@ -441,7 +445,11 @@ export default function Customers() {
                     <div className="grid grid-cols-4 items-center gap-4">
                       <FormLabel className="text-right">Address</FormLabel>
                       <FormControl>
-                        <Input {...field} className="col-span-3" />
+                        <Input 
+                          {...field} 
+                          value={field.value || ''} 
+                          className="col-span-3" 
+                        />
                       </FormControl>
                     </div>
                     <FormMessage className="text-right mr-4" />
