@@ -54,8 +54,8 @@ function App() {
     <AuthProvider>
       <ThemeProvider>
         <LanguageProvider>
-          <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-            <div className="w-full max-w-6xl mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 sm:p-8 my-8 text-gray-900 dark:text-gray-100">
+          <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+            <div className="w-full max-w-6xl mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 sm:p-8 my-8 text-gray-900 dark:text-gray-100 transition-colors duration-200">
               <AppHeader />
               <div className="mt-6">
                 <Switch>
@@ -132,19 +132,19 @@ function AppHeader() {
                       <MobileNavItem to="/inventory" icon={<Package className="w-4 h-4 mr-2" />} label="Inventory" />
                       
                       {/* Add common user links */}
-                      <div className="h-px bg-gray-200 my-2" />
+                      <div className="h-px bg-gray-200 dark:bg-gray-700 my-2" />
                       <MobileNavItem to="/profile" icon={<UserIcon className="w-4 h-4 mr-2" />} label="Profile" />
                       <MobileNavItem to="/settings" icon={<SettingsIcon className="w-4 h-4 mr-2" />} label="Settings" />
                       
                       {/* Admin specific links */}
                       {user?.role === "admin" && (
                         <>
-                          <div className="h-px bg-gray-200 my-2" />
+                          <div className="h-px bg-gray-200 dark:bg-gray-700 my-2" />
                           <MobileNavItem to="/users" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Users" />
                         </>
                       )}
                       
-                      <div className="h-px bg-gray-200 my-2" />
+                      <div className="h-px bg-gray-200 dark:bg-gray-700 my-2" />
                       <Button 
                         variant="destructive" 
                         size="sm" 
@@ -165,19 +165,31 @@ function AppHeader() {
             {/* Language Switcher - Simplified for mobile */}
             <div className="hidden sm:flex gap-2">
               <button
-                className={`px-2 py-1 text-xs rounded-md ${language === 'en' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
+                className={`px-2 py-1 text-xs rounded-md transition-colors duration-200 ${
+                  language === 'en' 
+                    ? 'bg-blue-500 dark:bg-blue-600 text-white' 
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                }`}
                 onClick={() => setLanguage('en')}
               >
                 EN
               </button>
               <button
-                className={`px-2 py-1 text-xs rounded-md ${language === 'fr' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
+                className={`px-2 py-1 text-xs rounded-md transition-colors duration-200 ${
+                  language === 'fr' 
+                    ? 'bg-blue-500 dark:bg-blue-600 text-white' 
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                }`}
                 onClick={() => setLanguage('fr')}
               >
                 FR
               </button>
               <button
-                className={`px-2 py-1 text-xs rounded-md ${language === 'ar' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
+                className={`px-2 py-1 text-xs rounded-md transition-colors duration-200 ${
+                  language === 'ar' 
+                    ? 'bg-blue-500 dark:bg-blue-600 text-white' 
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                }`}
                 onClick={() => setLanguage('ar')}
               >
                 عربي
@@ -286,9 +298,9 @@ function NavItem({ to, icon, label }: { to: string; icon: React.ReactNode; label
     <Link href={to}>
       <div className={`flex items-center px-4 py-2 text-sm font-medium cursor-pointer whitespace-nowrap border-b-2 ${
         isActive 
-          ? 'border-blue-500 text-blue-600' 
-          : 'border-transparent text-gray-700 hover:border-gray-300'
-      }`}>
+          ? 'border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400' 
+          : 'border-transparent text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700'
+      } transition-colors duration-200`}>
         {icon}
         <span className="truncate max-w-[120px] sm:max-w-none">{label}</span>
       </div>
@@ -307,8 +319,8 @@ function MobileNavItem({ to, icon, label }: { to: string; icon: React.ReactNode;
         variant="ghost" 
         size="sm" 
         className={`w-full justify-start py-3 px-3 h-auto ${
-          isActive ? 'bg-blue-50 text-blue-600' : ''
-        }`}
+          isActive ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
+        } transition-colors duration-200`}
       >
         <div className="flex items-center">
           {icon}
