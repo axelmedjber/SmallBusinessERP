@@ -124,6 +124,15 @@ function AppHeader() {
                 </div>
               </Link>
               
+              {user?.role === "admin" && (
+                <Link href="/users">
+                  <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 cursor-pointer">
+                    <UsersIcon className="w-4 h-4 mr-2" />
+                    Users
+                  </div>
+                </Link>
+              )}
+              
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="px-3 py-2 text-sm font-medium">
@@ -150,20 +159,12 @@ function AppHeader() {
                     </DropdownMenuItem>
                   </Link>
                   {user?.role === "admin" && (
-                    <>
-                      <Link href="/users">
-                        <DropdownMenuItem className="cursor-pointer">
-                          <UsersIcon className="w-4 h-4 mr-2" />
-                          Users
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link href="/settings">
-                        <DropdownMenuItem className="cursor-pointer">
-                          <Settings className="w-4 h-4 mr-2" />
-                          Settings
-                        </DropdownMenuItem>
-                      </Link>
-                    </>
+                    <Link href="/settings">
+                      <DropdownMenuItem className="cursor-pointer">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Settings
+                      </DropdownMenuItem>
+                    </Link>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
