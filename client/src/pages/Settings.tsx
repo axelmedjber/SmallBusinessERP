@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/hooks/use-language";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   Card,
   CardContent,
@@ -25,8 +26,8 @@ import { toast } from "@/hooks/use-toast";
 export default function Settings() {
   const { user } = useAuth();
   const { language, setLanguage } = useLanguage();
-
-  const [theme, setTheme] = useState("light");
+  const { theme, setTheme } = useTheme();
+  
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [inAppNotifications, setInAppNotifications] = useState(true);

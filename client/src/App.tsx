@@ -12,6 +12,7 @@ import SettingsPage from "./pages/Settings";
 import AuthPage from "./pages/auth-page";
 import NotFound from "./pages/not-found";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/hooks/use-language";
 import { AuthProvider } from "@/hooks/use-auth";
 import { useAuth } from "@/hooks/use-auth";
@@ -51,32 +52,34 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 function App() {
   return (
     <AuthProvider>
-      <LanguageProvider>
-        <div className="min-h-screen flex flex-col bg-gray-50">
-          <div className="w-full max-w-6xl mx-auto bg-white shadow-lg rounded-lg p-4 sm:p-8 my-8">
-            <AppHeader />
-            <div className="mt-6">
-              <Switch>
-                <Route path="/auth">
-                  <AuthPage />
-                </Route>
-                <ProtectedRoute path="/" component={Dashboard} />
-                <ProtectedRoute path="/calendar" component={Calendar} />
-                <ProtectedRoute path="/financial-health" component={FinancialHealth} />
-                <ProtectedRoute path="/customers" component={Customers} roles={["admin", "manager"]} />
-                <ProtectedRoute path="/invoices" component={Invoices} roles={["admin", "manager", "employee"]} />
-                <ProtectedRoute path="/inventory" component={Inventory} roles={["admin", "manager"]} />
-                <ProtectedRoute path="/users" component={Users} roles={["admin"]} />
-                <ProtectedRoute path="/profile" component={Profile} />
-                <ProtectedRoute path="/settings" component={SettingsPage} />
-                <Route>
-                  <NotFound />
-                </Route>
-              </Switch>
+      <ThemeProvider>
+        <LanguageProvider>
+          <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+            <div className="w-full max-w-6xl mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 sm:p-8 my-8 text-gray-900 dark:text-gray-100">
+              <AppHeader />
+              <div className="mt-6">
+                <Switch>
+                  <Route path="/auth">
+                    <AuthPage />
+                  </Route>
+                  <ProtectedRoute path="/" component={Dashboard} />
+                  <ProtectedRoute path="/calendar" component={Calendar} />
+                  <ProtectedRoute path="/financial-health" component={FinancialHealth} />
+                  <ProtectedRoute path="/customers" component={Customers} roles={["admin", "manager"]} />
+                  <ProtectedRoute path="/invoices" component={Invoices} roles={["admin", "manager", "employee"]} />
+                  <ProtectedRoute path="/inventory" component={Inventory} roles={["admin", "manager"]} />
+                  <ProtectedRoute path="/users" component={Users} roles={["admin"]} />
+                  <ProtectedRoute path="/profile" component={Profile} />
+                  <ProtectedRoute path="/settings" component={SettingsPage} />
+                  <Route>
+                    <NotFound />
+                  </Route>
+                </Switch>
+              </div>
             </div>
           </div>
-        </div>
-      </LanguageProvider>
+        </LanguageProvider>
+      </ThemeProvider>
     </AuthProvider>
   );
 }
