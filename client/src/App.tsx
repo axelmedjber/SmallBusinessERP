@@ -65,7 +65,8 @@ function App() {
                 <ProtectedRoute path="/invoices" component={Invoices} roles={["admin", "manager", "employee"]} />
                 <ProtectedRoute path="/inventory" component={Inventory} roles={["admin", "manager"]} />
                 <ProtectedRoute path="/users" component={Users} roles={["admin"]} />
-                <ProtectedRoute path="/settings" component={Dashboard} roles={["admin"]} />
+                <ProtectedRoute path="/profile" component={Dashboard} />
+                <ProtectedRoute path="/settings" component={Dashboard} />
                 <Route>
                   <NotFound />
                 </Route>
@@ -125,11 +126,16 @@ function AppHeader() {
                       <MobileNavItem to="/invoices" icon={<FileText className="w-4 h-4 mr-2" />} label="Invoices" />
                       <MobileNavItem to="/inventory" icon={<Package className="w-4 h-4 mr-2" />} label="Inventory" />
                       
+                      {/* Add common user links */}
+                      <div className="h-px bg-gray-200 my-2" />
+                      <MobileNavItem to="/profile" icon={<User className="w-4 h-4 mr-2" />} label="Profile" />
+                      <MobileNavItem to="/settings" icon={<Settings className="w-4 h-4 mr-2" />} label="Settings" />
+                      
+                      {/* Admin specific links */}
                       {user?.role === "admin" && (
                         <>
                           <div className="h-px bg-gray-200 my-2" />
                           <MobileNavItem to="/users" icon={<UsersIcon className="w-4 h-4 mr-2" />} label="Users" />
-                          <MobileNavItem to="/settings" icon={<Settings className="w-4 h-4 mr-2" />} label="Settings" />
                         </>
                       )}
                       
@@ -213,14 +219,18 @@ function AppHeader() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <User className="w-4 h-4 mr-2" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
-                  </DropdownMenuItem>
+                  <Link href="/profile" className="w-full">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <User className="w-4 h-4 mr-2" />
+                      Profile
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/settings" className="w-full">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </DropdownMenuItem>
+                  </Link>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
                     <LogOut className="w-4 h-4 mr-2" />
