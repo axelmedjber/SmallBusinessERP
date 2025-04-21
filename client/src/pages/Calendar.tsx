@@ -60,7 +60,9 @@ const Calendar = () => {
   
   // Clear selected appointment when dialog closes
   const handleDialogClose = () => {
-    setSelectedAppointment(undefined);
+    setTimeout(() => {
+      setSelectedAppointment(undefined);
+    }, 300); // Small delay to avoid issues with the dialog animation
     setDialogOpen(false);
   };
   
@@ -145,18 +147,19 @@ const Calendar = () => {
                   
                   <div className="mt-2 space-y-1">
                     {dayAppointments.slice(0, 3).map((appointment) => (
-                      <div
+                      <Button
                         key={appointment.id}
                         onClick={() => handleAppointmentClick(appointment)}
-                        className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 
-                                 text-xs p-1 rounded truncate cursor-pointer hover:bg-blue-200 
-                                 dark:hover:bg-blue-800/50 transition-colors flex items-center"
+                        variant="ghost"
+                        className="p-1 h-auto w-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 
+                                 text-xs rounded hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors 
+                                 flex items-center justify-between"
                       >
-                        <span className="flex-1 truncate">
+                        <span className="flex-1 truncate text-left">
                           {formatAppointmentTime(appointment.time)}: {appointment.title}
                         </span>
-                        <Edit className="h-3 w-3 ml-1 opacity-70" />
-                      </div>
+                        <Edit className="h-3 w-3 ml-1 opacity-70 shrink-0" />
+                      </Button>
                     ))}
                     
                     {dayAppointments.length > 3 && (
@@ -184,13 +187,11 @@ const Calendar = () => {
         </CardContent>
       </Card>
       
-      {/* Edit Appointment Dialog */}
-      {dialogOpen && (
-        <AppointmentDialog
-          editAppointment={selectedAppointment}
-          onClose={handleDialogClose}
-        />
-      )}
+      {/* Edit Appointment Dialog - Always render but control with open state */}
+      <AppointmentDialog
+        editAppointment={selectedAppointment}
+        onClose={handleDialogClose}
+      />
       
       {/* Toaster component for notifications */}
       <Toaster />

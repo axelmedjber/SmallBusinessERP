@@ -72,6 +72,7 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
     if (editAppointment) {
       setAppointment(editAppointment);
       setIsEdit(true);
+      setOpen(true);
       
       // Parse the date string to a Date object for the calendar
       if (editAppointment.date) {
@@ -79,9 +80,12 @@ const AppointmentDialog: React.FC<AppointmentDialogProps> = ({
         setDate(parsedDate);
       }
     } else {
-      setAppointment(initialAppointmentState);
-      setIsEdit(false);
-      setDate(new Date());
+      if (!open) {
+        // Reset form only when dialog is closed
+        setAppointment(initialAppointmentState);
+        setIsEdit(false);
+        setDate(new Date());
+      }
     }
   }, [editAppointment, open]);
 
