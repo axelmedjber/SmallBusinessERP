@@ -8,16 +8,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import FinancialMetricsCards from "./FinancialMetricsCards";
 import FinancialCharts from "./FinancialCharts";
 import { queryClient } from "@/lib/queryClient";
+import { NetworkErrorContainer, ServerErrorContainer } from "@/components/ui/error-container";
 
 const FinancialDashboard = () => {
   const { language, t } = useLanguage();
   const [period, setPeriod] = useState<PeriodType>("monthly");
   
-  const { data: financialData, isLoading } = useQuery({
+  const { 
+    data: financialData, 
+    isLoading,
+    error: financialDataError,
+    refetch: refetchFinancialData
+  } = useQuery({
     queryKey: ["/api/financial-data", period],
   });
   
-  const { mutate: refreshData, isPending: isRefreshing } = useMutation({
+  const { mutate: refreshData, isPending: isRefreshing, error: refreshError } = useMutation({
     mutationFn: async () => {
       return await fetch(`/api/financial-data/refresh?period=${period}`, {
         method: "POST",
@@ -35,11 +41,11 @@ const FinancialDashboard = () => {
   
   return (
     <section className="mb-8">
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-xl font-semibold text-gray-800">{t.financialDashboard}</h2>
         
-        <div className="flex items-center space-x-2">
-          <div className="flex flex-col">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+          <div className="flex flex-col w-full sm:w-auto">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {t.selectPeriod}
             </label>
@@ -47,7 +53,7 @@ const FinancialDashboard = () => {
               value={period}
               onValueChange={(value) => setPeriod(value as PeriodType)}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder={t.monthly} />
               </SelectTrigger>
               <SelectContent>
@@ -63,17 +69,19 @@ const FinancialDashboard = () => {
             variant="default"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="h-10 mt-6"
+            className="h-10 sm:mt-6 w-full sm:w-auto"
           >
             {isRefreshing ? (
               <>
                 <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                {t.refreshing}
+                <span className="hidden sm:inline">{t.refreshing}</span>
+                <span className="sm:hidden">...</span>
               </>
             ) : (
               <>
                 <RefreshCw className="mr-2 h-4 w-4" />
-                {t.refreshData}
+                <span className="hidden sm:inline">{t.refreshData}</span>
+                <span className="sm:hidden">{t.refreshing.split(' ')[0]}</span>
               </>
             )}
           </Button>

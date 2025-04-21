@@ -20,6 +20,13 @@ import {
   TableRow
 } from "@/components/ui/table";
 
+interface ExpenseItem {
+  id: number;
+  name: string;
+  amount: number;
+  percentage: number;
+}
+
 const COLORS = [
   '#f97316', // Orange
   '#facc15', // Yellow
@@ -35,8 +42,9 @@ const ExpenseAnalysis = () => {
   const { language } = useLanguage();
   const t = translations[language];
   
-  const { data: expensesData, isLoading } = useQuery({
+  const { data: expensesData, isLoading } = useQuery<ExpenseItem[]>({
     queryKey: ["/api/expenses"],
+    initialData: [],
   });
   
   if (isLoading) {
@@ -59,9 +67,9 @@ const ExpenseAnalysis = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Expense Category Chart */}
         <Card className="bg-white shadow-sm border border-gray-100">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <h3 className="text-base font-medium text-gray-700 mb-4">{t.expenseCategories}</h3>
-            <div className="h-64">
+            <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -69,8 +77,8 @@ const ExpenseAnalysis = () => {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    outerRadius={80}
-                    innerRadius={40}
+                    outerRadius={70}
+                    innerRadius={35}
                     fill="#8884d8"
                     dataKey="amount"
                     nameKey="name"
@@ -82,7 +90,7 @@ const ExpenseAnalysis = () => {
                   <Tooltip 
                     formatter={(value) => [formatCurrency(Number(value), language), '']}
                   />
-                  <Legend />
+                  <Legend layout="horizontal" verticalAlign="bottom" align="center" />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -91,9 +99,9 @@ const ExpenseAnalysis = () => {
         
         {/* Top Expenses Table */}
         <Card className="bg-white shadow-sm border border-gray-100">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <h3 className="text-base font-medium text-gray-700 mb-4">{t.topExpenses}</h3>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -105,11 +113,11 @@ const ExpenseAnalysis = () => {
                 <TableBody>
                   {expensesData.map((expense: any) => (
                     <TableRow key={expense.id}>
-                      <TableCell className="text-gray-500">{expense.name}</TableCell>
-                      <TableCell className="text-right text-gray-900">
+                      <TableCell className="text-gray-500 py-2">{expense.name}</TableCell>
+                      <TableCell className="text-right text-gray-900 py-2">
                         {formatCurrency(expense.amount, language)}
                       </TableCell>
-                      <TableCell className="text-right text-gray-500">
+                      <TableCell className="text-right text-gray-500 py-2">
                         {expense.percentage.toFixed(1)}%
                       </TableCell>
                     </TableRow>
