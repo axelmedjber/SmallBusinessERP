@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
+import { ServerErrorContainer } from "@/components/ui/error-container";
 
 interface ExpenseItem {
   id: number;
@@ -42,10 +43,24 @@ const ExpenseAnalysis = () => {
   const { language } = useLanguage();
   const t = translations[language];
   
-  const { data: expensesData, isLoading } = useQuery<ExpenseItem[]>({
+  const { 
+    data: expensesData, 
+    isLoading, 
+    error, 
+    refetch
+  } = useQuery<ExpenseItem[]>({
     queryKey: ["/api/expenses"],
     initialData: [],
   });
+  
+  if (error) {
+    return (
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold text-gray-800 mb-6">{t.expenseBreakdown}</h2>
+        <ServerErrorContainer retry={() => refetch()} isRetrying={isLoading} />
+      </section>
+    );
+  }
   
   if (isLoading) {
     return (
@@ -58,7 +73,16 @@ const ExpenseAnalysis = () => {
     );
   }
   
-  if (!expensesData) return null;
+  if (!expensesData || expensesData.length === 0) {
+    return (
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold text-gray-800 mb-6">{t.expenseBreakdown}</h2>
+        <div className="p-6 text-center text-gray-500">
+          <p>{t.noDataAvailable}</p>
+        </div>
+      </section>
+    );
+  }
   
   return (
     <section className="mb-8">

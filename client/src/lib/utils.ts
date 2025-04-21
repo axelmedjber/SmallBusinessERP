@@ -131,7 +131,7 @@ export const translations = {
     minutes: 'minutes',
     save: 'Save',
     cancel: 'Cancel',
-    // Error messages
+    // Error and empty states
     error: 'Error',
     genericError: 'Something went wrong. Please try again.',
     retry: 'Try Again',
@@ -144,6 +144,7 @@ export const translations = {
     notFoundMessage: 'The requested resource could not be found.',
     serverError: 'Server Error',
     serverErrorMessage: 'The server encountered an error. Please try again later.',
+    noDataAvailable: 'No data available for the selected period.',
   },
   fr: {
     title: 'Système ERP pour Petites Entreprises',
@@ -211,6 +212,7 @@ export const translations = {
     notFoundMessage: 'La ressource demandée est introuvable.',
     serverError: 'Erreur Serveur',
     serverErrorMessage: 'Le serveur a rencontré une erreur. Veuillez réessayer plus tard.',
+    noDataAvailable: 'Aucune donnée disponible pour la période sélectionnée.',
   },
   ar: {
     title: 'نظام تخطيط موارد المؤسسات للشركات الصغيرة',
@@ -278,5 +280,6 @@ export const translations = {
     notFoundMessage: 'تعذر العثور على المورد المطلوب.',
     serverError: 'خطأ في الخادم',
     serverErrorMessage: 'واجه الخادم خطأ. يرجى المحاولة مرة أخرى لاحقًا.',
+    noDataAvailable: 'لا توجد بيانات متاحة للفترة المحددة.',
   }
 };

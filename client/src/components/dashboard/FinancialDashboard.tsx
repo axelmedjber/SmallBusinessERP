@@ -88,10 +88,24 @@ const FinancialDashboard = () => {
         </div>
       </div>
       
-      {/* Financial Metrics Cards and Charts */}
-      {isLoading ? (
+      {/* Error Handling */}
+      {financialDataError ? (
+        <ServerErrorContainer 
+          retry={() => refetchFinancialData()} 
+          isRetrying={isLoading} 
+        />
+      ) : refreshError ? (
+        <NetworkErrorContainer 
+          retry={() => refreshData()} 
+          isRetrying={isRefreshing} 
+        />
+      ) : isLoading ? (
         <div className="h-96 flex items-center justify-center">
           <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : !financialData ? (
+        <div className="p-6 text-center text-gray-500">
+          <p>{t.noDataAvailable}</p>
         </div>
       ) : (
         <>
