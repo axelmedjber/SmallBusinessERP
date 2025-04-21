@@ -59,6 +59,17 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
+// Create a form schema with validation
+const inventoryFormSchema = insertInventoryItemSchema.extend({
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  unitPrice: z.string().min(1, { message: "Unit price is required" }),
+  categoryId: z.number().min(1, { message: "Please select a category" }),
+  quantityInStock: z.number().min(0, { message: "Quantity cannot be negative" }),
+  reorderLevel: z.number().min(1, { message: "Reorder level must be at least 1" }),
+});
+
+type InventoryFormValues = z.infer<typeof inventoryFormSchema>;
+
 export default function Inventory() {
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -68,29 +79,37 @@ export default function Inventory() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [stockQuantity, setStockQuantity] = useState(0);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
 
-  // Form state
-  const [newItem, setNewItem] = useState<Partial<InsertInventoryItem>>({
-    name: "",
-    description: "",
-    sku: "",
-    categoryId: 0,
-    unitPrice: "0.00",
-    costPrice: "0.00",
-    quantityInStock: 0,
-    reorderLevel: 0,
+  // Create form
+  const createForm = useForm<InventoryFormValues>({
+    resolver: zodResolver(inventoryFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      sku: "",
+      categoryId: 0,
+      unitPrice: "0.00",
+      costPrice: "0.00",
+      quantityInStock: 0,
+      reorderLevel: 10,
+    },
   });
 
-  // Edit form state
-  const [editItem, setEditItem] = useState<Partial<InsertInventoryItem>>({
-    name: "",
-    description: "",
-    sku: "",
-    categoryId: 0,
-    unitPrice: "0.00",
-    costPrice: "0.00",
-    quantityInStock: 0,
-    reorderLevel: 0,
+  // Edit form
+  const editForm = useForm<InventoryFormValues>({
+    resolver: zodResolver(inventoryFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      sku: "",
+      categoryId: 0,
+      unitPrice: "0.00",
+      costPrice: "0.00",
+      quantityInStock: 0,
+      reorderLevel: 10,
+    },
   });
 
   // Fetch inventory items
@@ -122,7 +141,7 @@ export default function Inventory() {
 
   // Create item mutation
   const createItemMutation = useMutation({
-    mutationFn: async (itemData: Partial<InsertInventoryItem>) => {
+    mutationFn: async (itemData: InventoryFormValues) => {
       const res = await apiRequest("POST", "/api/inventory/items", itemData);
       if (!res.ok) {
         const errorData = await res.json();
@@ -133,7 +152,7 @@ export default function Inventory() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/items"] });
       setIsCreateDialogOpen(false);
-      setNewItem({
+      createForm.reset({
         name: "",
         description: "",
         sku: "",
@@ -141,7 +160,7 @@ export default function Inventory() {
         unitPrice: "0.00",
         costPrice: "0.00",
         quantityInStock: 0,
-        reorderLevel: 0,
+        reorderLevel: 10,
       });
       toast({
         title: "Success",
@@ -159,7 +178,7 @@ export default function Inventory() {
 
   // Update item mutation
   const updateItemMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<InsertInventoryItem> }) => {
+    mutationFn: async ({ id, data }: { id: number; data: InventoryFormValues }) => {
       const res = await apiRequest("PUT", `/api/inventory/items/${id}`, data);
       if (!res.ok) {
         const errorData = await res.json();
@@ -241,13 +260,13 @@ export default function Inventory() {
   });
 
   // Handlers
-  const handleCreateItem = () => {
-    createItemMutation.mutate(newItem);
+  const onCreateSubmit = (data: InventoryFormValues) => {
+    createItemMutation.mutate(data);
   };
 
-  const handleUpdateItem = () => {
+  const onEditSubmit = (data: InventoryFormValues) => {
     if (!selectedItem) return;
-    updateItemMutation.mutate({ id: selectedItem.id, data: editItem });
+    updateItemMutation.mutate({ id: selectedItem.id, data });
   };
 
   const handleUpdateStock = () => {
@@ -257,11 +276,11 @@ export default function Inventory() {
 
   const handleEditClick = (item: InventoryItem) => {
     setSelectedItem(item);
-    setEditItem({
+    editForm.reset({
       name: item.name,
       description: item.description || "",
       sku: item.sku || "",
-      categoryId: item.categoryId,
+      categoryId: item.categoryId || 0,
       unitPrice: item.unitPrice,
       costPrice: item.costPrice || "0.00",
       quantityInStock: item.quantityInStock,
@@ -277,8 +296,15 @@ export default function Inventory() {
   };
 
   const handleDeleteClick = (item: InventoryItem) => {
-    if (window.confirm(`Are you sure you want to delete item "${item.name}"?`)) {
-      deleteItemMutation.mutate(item.id);
+    setItemToDelete(item);
+    setIsDeleteAlertOpen(true);
+  };
+  
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      deleteItemMutation.mutate(itemToDelete.id);
+      setIsDeleteAlertOpen(false);
+      setItemToDelete(null);
     }
   };
 
@@ -325,116 +351,197 @@ export default function Inventory() {
                   Fill in the details to add a new item to inventory.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Name
-                  </Label>
-                  <Input
-                    id="name"
-                    value={newItem.name}
-                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                    className="col-span-3"
+              
+              <Form {...createForm}>
+                <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-4">
+                  <FormField
+                    control={createForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Name</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              value={field.value || ''} 
+                              className="col-span-3" 
+                            />
+                          </FormControl>
+                        </div>
+                        <FormMessage className="text-right mr-4" />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="description" className="text-right">
-                    Description
-                  </Label>
-                  <Input
-                    id="description"
-                    value={newItem.description ?? ""}
-                    onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                    className="col-span-3"
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Description</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              value={field.value || ''} 
+                              className="col-span-3" 
+                            />
+                          </FormControl>
+                        </div>
+                        <FormMessage className="text-right mr-4" />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="sku" className="text-right">
-                    SKU
-                  </Label>
-                  <Input
-                    id="sku"
-                    value={newItem.sku ?? ""}
-                    onChange={(e) => setNewItem({ ...newItem, sku: e.target.value })}
-                    className="col-span-3"
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="sku"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">SKU</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              value={field.value || ''} 
+                              className="col-span-3" 
+                            />
+                          </FormControl>
+                        </div>
+                        <FormMessage className="text-right mr-4" />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="category" className="text-right">
-                    Category
-                  </Label>
-                  <Select
-                    value={newItem.categoryId?.toString()}
-                    onValueChange={(value) => setNewItem({ ...newItem, categoryId: parseInt(value) })}
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id.toString()}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="unitPrice" className="text-right">
-                    Unit Price
-                  </Label>
-                  <Input
-                    id="unitPrice"
-                    type="number"
-                    step="0.01"
-                    value={newItem.unitPrice}
-                    onChange={(e) => setNewItem({ ...newItem, unitPrice: e.target.value })}
-                    className="col-span-3"
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="categoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Category</FormLabel>
+                          <Select 
+                            onValueChange={(value) => field.onChange(parseInt(value))}
+                            value={field.value ? field.value.toString() : undefined}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="Select a category" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {categories.map((category) => (
+                                <SelectItem key={category.id} value={category.id.toString()}>
+                                  {category.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <FormMessage className="text-right mr-4" />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="costPrice" className="text-right">
-                    Cost Price
-                  </Label>
-                  <Input
-                    id="costPrice"
-                    type="number"
-                    step="0.01"
-                    value={newItem.costPrice ?? "0.00"}
-                    onChange={(e) => setNewItem({ ...newItem, costPrice: e.target.value })}
-                    className="col-span-3"
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="unitPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Unit Price</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              type="number"
+                              step="0.01"
+                              value={field.value || ''} 
+                              className="col-span-3" 
+                            />
+                          </FormControl>
+                        </div>
+                        <FormMessage className="text-right mr-4" />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="quantityInStock" className="text-right">
-                    Quantity
-                  </Label>
-                  <Input
-                    id="quantityInStock"
-                    type="number"
-                    value={newItem.quantityInStock}
-                    onChange={(e) => setNewItem({ ...newItem, quantityInStock: parseInt(e.target.value) })}
-                    className="col-span-3"
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="costPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Cost Price</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              type="number"
+                              step="0.01"
+                              value={field.value || ''} 
+                              className="col-span-3" 
+                            />
+                          </FormControl>
+                        </div>
+                        <FormMessage className="text-right mr-4" />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="reorderLevel" className="text-right">
-                    Reorder Level
-                  </Label>
-                  <Input
-                    id="reorderLevel"
-                    type="number"
-                    value={newItem.reorderLevel ?? 10}
-                    onChange={(e) => setNewItem({ ...newItem, reorderLevel: parseInt(e.target.value) })}
-                    className="col-span-3"
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="quantityInStock"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Quantity</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              type="number"
+                              onChange={(e) => field.onChange(parseInt(e.target.value))}
+                              value={field.value || 0} 
+                              className="col-span-3" 
+                            />
+                          </FormControl>
+                        </div>
+                        <FormMessage className="text-right mr-4" />
+                      </FormItem>
+                    )}
                   />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={handleCreateItem} disabled={createItemMutation.isPending}>
-                  {createItemMutation.isPending ? "Creating..." : "Create Item"}
-                </Button>
-              </div>
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="reorderLevel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Reorder Level</FormLabel>
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              type="number"
+                              onChange={(e) => field.onChange(parseInt(e.target.value))}
+                              value={field.value || 10} 
+                              className="col-span-3" 
+                            />
+                          </FormControl>
+                        </div>
+                        <FormMessage className="text-right mr-4" />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <DialogFooter>
+                    <Button 
+                      type="submit" 
+                      disabled={createItemMutation.isPending}
+                    >
+                      {createItemMutation.isPending ? "Creating..." : "Create Item"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
             </DialogContent>
           </Dialog>
         </div>
@@ -528,116 +635,197 @@ export default function Inventory() {
               Update the details of the selected inventory item.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="edit-name"
-                value={editItem.name}
-                onChange={(e) => setEditItem({ ...editItem, name: e.target.value })}
-                className="col-span-3"
+          
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <FormField
+                control={editForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Name</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          value={field.value || ''} 
+                          className="col-span-3" 
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="text-right mr-4" />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-description" className="text-right">
-                Description
-              </Label>
-              <Input
-                id="edit-description"
-                value={editItem.description || ""}
-                onChange={(e) => setEditItem({ ...editItem, description: e.target.value })}
-                className="col-span-3"
+              
+              <FormField
+                control={editForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Description</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          value={field.value || ''} 
+                          className="col-span-3" 
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="text-right mr-4" />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-sku" className="text-right">
-                SKU
-              </Label>
-              <Input
-                id="edit-sku"
-                value={editItem.sku || ""}
-                onChange={(e) => setEditItem({ ...editItem, sku: e.target.value })}
-                className="col-span-3"
+              
+              <FormField
+                control={editForm.control}
+                name="sku"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">SKU</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          value={field.value || ''} 
+                          className="col-span-3" 
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="text-right mr-4" />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-category" className="text-right">
-                Category
-              </Label>
-              <Select
-                value={editItem.categoryId?.toString()}
-                onValueChange={(value) => setEditItem({ ...editItem, categoryId: parseInt(value) })}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id.toString()}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-unitPrice" className="text-right">
-                Unit Price
-              </Label>
-              <Input
-                id="edit-unitPrice"
-                type="number"
-                step="0.01"
-                value={editItem.unitPrice}
-                onChange={(e) => setEditItem({ ...editItem, unitPrice: e.target.value })}
-                className="col-span-3"
+              
+              <FormField
+                control={editForm.control}
+                name="categoryId"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Category</FormLabel>
+                      <Select 
+                        onValueChange={(value) => field.onChange(parseInt(value))}
+                        value={field.value ? field.value.toString() : undefined}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.id.toString()}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <FormMessage className="text-right mr-4" />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-costPrice" className="text-right">
-                Cost Price
-              </Label>
-              <Input
-                id="edit-costPrice"
-                type="number"
-                step="0.01"
-                value={editItem.costPrice ?? "0.00"}
-                onChange={(e) => setEditItem({ ...editItem, costPrice: e.target.value })}
-                className="col-span-3"
+              
+              <FormField
+                control={editForm.control}
+                name="unitPrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Unit Price</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          type="number"
+                          step="0.01"
+                          value={field.value || ''} 
+                          className="col-span-3" 
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="text-right mr-4" />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-quantityInStock" className="text-right">
-                Quantity
-              </Label>
-              <Input
-                id="edit-quantityInStock"
-                type="number"
-                value={editItem.quantityInStock}
-                onChange={(e) => setEditItem({ ...editItem, quantityInStock: parseInt(e.target.value) })}
-                className="col-span-3"
+              
+              <FormField
+                control={editForm.control}
+                name="costPrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Cost Price</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          type="number"
+                          step="0.01"
+                          value={field.value || ''} 
+                          className="col-span-3" 
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="text-right mr-4" />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-reorderLevel" className="text-right">
-                Reorder Level
-              </Label>
-              <Input
-                id="edit-reorderLevel"
-                type="number"
-                value={editItem.reorderLevel ?? 10}
-                onChange={(e) => setEditItem({ ...editItem, reorderLevel: parseInt(e.target.value) })}
-                className="col-span-3"
+              
+              <FormField
+                control={editForm.control}
+                name="quantityInStock"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Quantity</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          type="number"
+                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          value={field.value || 0} 
+                          className="col-span-3" 
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="text-right mr-4" />
+                  </FormItem>
+                )}
               />
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={handleUpdateItem} disabled={updateItemMutation.isPending}>
-              {updateItemMutation.isPending ? "Updating..." : "Update Item"}
-            </Button>
-          </div>
+              
+              <FormField
+                control={editForm.control}
+                name="reorderLevel"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Reorder Level</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          type="number"
+                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          value={field.value || 10} 
+                          className="col-span-3" 
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="text-right mr-4" />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button 
+                  type="submit" 
+                  disabled={updateItemMutation.isPending}
+                >
+                  {updateItemMutation.isPending ? "Updating..." : "Update Item"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 
@@ -671,6 +859,27 @@ export default function Inventory() {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{itemToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
