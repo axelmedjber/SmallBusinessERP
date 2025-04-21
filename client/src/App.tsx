@@ -7,6 +7,8 @@ import Customers from "./pages/Customers";
 import Invoices from "./pages/Invoices";
 import Inventory from "./pages/Inventory";
 import Users from "./pages/Users";
+import Profile from "./pages/Profile";
+import SettingsPage from "./pages/Settings";
 import AuthPage from "./pages/auth-page";
 import NotFound from "./pages/not-found";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -38,9 +40,9 @@ import {
   Users as UsersIcon,
   FileText,
   Package,
-  Settings,
+  Settings as SettingsIcon,
   LogOut,
-  User,
+  User as UserIcon,
   ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -65,8 +67,8 @@ function App() {
                 <ProtectedRoute path="/invoices" component={Invoices} roles={["admin", "manager", "employee"]} />
                 <ProtectedRoute path="/inventory" component={Inventory} roles={["admin", "manager"]} />
                 <ProtectedRoute path="/users" component={Users} roles={["admin"]} />
-                <ProtectedRoute path="/profile" component={Dashboard} />
-                <ProtectedRoute path="/settings" component={Dashboard} />
+                <ProtectedRoute path="/profile" component={Profile} />
+                <ProtectedRoute path="/settings" component={SettingsPage} />
                 <Route>
                   <NotFound />
                 </Route>
@@ -128,8 +130,8 @@ function AppHeader() {
                       
                       {/* Add common user links */}
                       <div className="h-px bg-gray-200 my-2" />
-                      <MobileNavItem to="/profile" icon={<User className="w-4 h-4 mr-2" />} label="Profile" />
-                      <MobileNavItem to="/settings" icon={<Settings className="w-4 h-4 mr-2" />} label="Settings" />
+                      <MobileNavItem to="/profile" icon={<UserIcon className="w-4 h-4 mr-2" />} label="Profile" />
+                      <MobileNavItem to="/settings" icon={<SettingsIcon className="w-4 h-4 mr-2" />} label="Settings" />
                       
                       {/* Admin specific links */}
                       {user?.role === "admin" && (
@@ -221,13 +223,13 @@ function AppHeader() {
                   <DropdownMenuSeparator />
                   <Link href="/profile" className="w-full">
                     <DropdownMenuItem className="cursor-pointer">
-                      <User className="w-4 h-4 mr-2" />
+                      <UserIcon className="w-4 h-4 mr-2" />
                       Profile
                     </DropdownMenuItem>
                   </Link>
                   <Link href="/settings" className="w-full">
                     <DropdownMenuItem className="cursor-pointer">
-                      <Settings className="w-4 h-4 mr-2" />
+                      <SettingsIcon className="w-4 h-4 mr-2" />
                       Settings
                     </DropdownMenuItem>
                   </Link>
