@@ -23,9 +23,40 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, UserPlus, Search } from "lucide-react";
+import { Edit, Trash2, UserPlus, Search, AlertCircle } from "lucide-react";
 import { useLanguage } from "@/hooks/use-language";
-import { Customer, InsertCustomer } from "@shared/schema";
+import { Customer, InsertCustomer, insertCustomerSchema } from "@shared/schema";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+// Extended schema with validation
+const customerFormSchema = insertCustomerSchema.extend({
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  email: z.string().email({ message: "Please enter a valid email address" }).or(z.literal("")),
+  phone: z.string().regex(/^\+?[0-9\s\-()]{7,}$/, { 
+    message: "Please enter a valid phone number" 
+  }).or(z.literal("")),
+});
 
 export default function Customers() {
   const { t } = useLanguage();
@@ -34,23 +65,31 @@ export default function Customers() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Form state
-  const [newCustomer, setNewCustomer] = useState<Partial<InsertCustomer>>({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    status: "active",
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  
+  // Create form with validation
+  const createForm = useForm<z.infer<typeof customerFormSchema>>({
+    resolver: zodResolver(customerFormSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      status: "active",
+    },
   });
-
-  // Edit form state
-  const [editCustomer, setEditCustomer] = useState<Partial<InsertCustomer>>({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    status: "active",
+  
+  // Edit form with validation
+  const editForm = useForm<z.infer<typeof customerFormSchema>>({
+    resolver: zodResolver(customerFormSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      status: "active",
+    },
   });
 
   const { data: customers = [], isLoading } = useQuery<Customer[]>({
@@ -66,7 +105,7 @@ export default function Customers() {
   });
 
   const createCustomerMutation = useMutation({
-    mutationFn: async (customerData: Partial<InsertCustomer>) => {
+    mutationFn: async (customerData: z.infer<typeof customerFormSchema>) => {
       const res = await apiRequest("POST", "/api/customers", customerData);
       if (!res.ok) {
         const errorData = await res.json();
@@ -77,7 +116,7 @@ export default function Customers() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       setIsCreateDialogOpen(false);
-      setNewCustomer({
+      createForm.reset({
         name: "",
         email: "",
         phone: "",
@@ -99,7 +138,7 @@ export default function Customers() {
   });
 
   const updateCustomerMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<InsertCustomer> }) => {
+    mutationFn: async ({ id, data }: { id: number; data: z.infer<typeof customerFormSchema> }) => {
       const res = await apiRequest("PUT", `/api/customers/${id}`, data);
       if (!res.ok) {
         const errorData = await res.json();
@@ -111,6 +150,7 @@ export default function Customers() {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       setIsEditDialogOpen(false);
       setSelectedCustomer(null);
+      editForm.reset();
       toast({
         title: "Success",
         description: "Customer updated successfully",
@@ -136,6 +176,8 @@ export default function Customers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      setIsDeleteAlertOpen(false);
+      setCustomerToDelete(null);
       toast({
         title: "Success",
         description: "Customer deleted successfully",
@@ -150,18 +192,18 @@ export default function Customers() {
     },
   });
 
-  const handleCreateCustomer = () => {
-    createCustomerMutation.mutate(newCustomer);
+  const onCreateSubmit = (data: z.infer<typeof customerFormSchema>) => {
+    createCustomerMutation.mutate(data);
   };
 
-  const handleUpdateCustomer = () => {
+  const onEditSubmit = (data: z.infer<typeof customerFormSchema>) => {
     if (!selectedCustomer) return;
-    updateCustomerMutation.mutate({ id: selectedCustomer.id, data: editCustomer });
+    updateCustomerMutation.mutate({ id: selectedCustomer.id, data });
   };
 
   const handleEditClick = (customer: Customer) => {
     setSelectedCustomer(customer);
-    setEditCustomer({
+    editForm.reset({
       name: customer.name,
       email: customer.email || "",
       phone: customer.phone || "",
@@ -172,8 +214,13 @@ export default function Customers() {
   };
 
   const handleDeleteClick = (customer: Customer) => {
-    if (window.confirm(`Are you sure you want to delete customer "${customer.name}"?`)) {
-      deleteCustomerMutation.mutate(customer.id);
+    setCustomerToDelete(customer);
+    setIsDeleteAlertOpen(true);
+  };
+  
+  const confirmDelete = () => {
+    if (customerToDelete) {
+      deleteCustomerMutation.mutate(customerToDelete.id);
     }
   };
 
@@ -218,58 +265,111 @@ export default function Customers() {
                   Fill in the details to create a new customer record.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Name
-                  </Label>
-                  <Input
-                    id="name"
-                    value={newCustomer.name}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
-                    className="col-span-3"
+              
+              <Form {...createForm}>
+                <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-4">
+                  <FormField
+                    control={createForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} className="col-span-3" />
+                          </FormControl>
+                        </div>
+                        <FormMessage className="text-right mr-4" />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="email" className="text-right">
-                    Email
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={newCustomer.email}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                    className="col-span-3"
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" {...field} className="col-span-3" />
+                          </FormControl>
+                        </div>
+                        <FormMessage className="text-right mr-4" />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="phone" className="text-right">
-                    Phone
-                  </Label>
-                  <Input
-                    id="phone"
-                    value={newCustomer.phone}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                    className="col-span-3"
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Phone</FormLabel>
+                          <FormControl>
+                            <Input {...field} className="col-span-3" />
+                          </FormControl>
+                        </div>
+                        <FormMessage className="text-right mr-4" />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="address" className="text-right">
-                    Address
-                  </Label>
-                  <Input
-                    id="address"
-                    value={newCustomer.address}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
-                    className="col-span-3"
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Address</FormLabel>
+                          <FormControl>
+                            <Input {...field} className="col-span-3" />
+                          </FormControl>
+                        </div>
+                        <FormMessage className="text-right mr-4" />
+                      </FormItem>
+                    )}
                   />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" onClick={handleCreateCustomer} disabled={createCustomerMutation.isPending}>
-                  {createCustomerMutation.isPending ? "Creating..." : "Create Customer"}
-                </Button>
-              </DialogFooter>
+                  
+                  <FormField
+                    control={createForm.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Status</FormLabel>
+                          <Select 
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="Select a status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                              <SelectItem value="pending">Pending</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <FormMessage className="text-right mr-4" />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <DialogFooter>
+                    <Button 
+                      type="submit" 
+                      disabled={createCustomerMutation.isPending}
+                    >
+                      {createCustomerMutation.isPending ? "Creating..." : "Create Customer"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
             </DialogContent>
           </Dialog>
         </div>
@@ -282,58 +382,111 @@ export default function Customers() {
             <DialogTitle>Edit Customer</DialogTitle>
             <DialogDescription>Update customer information.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="edit-name"
-                value={editCustomer.name}
-                onChange={(e) => setEditCustomer({ ...editCustomer, name: e.target.value })}
-                className="col-span-3"
+          
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <FormField
+                control={editForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} className="col-span-3" />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="text-right mr-4" />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-email" className="text-right">
-                Email
-              </Label>
-              <Input
-                id="edit-email"
-                type="email"
-                value={editCustomer.email}
-                onChange={(e) => setEditCustomer({ ...editCustomer, email: e.target.value })}
-                className="col-span-3"
+              
+              <FormField
+                control={editForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" {...field} className="col-span-3" />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="text-right mr-4" />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-phone" className="text-right">
-                Phone
-              </Label>
-              <Input
-                id="edit-phone"
-                value={editCustomer.phone}
-                onChange={(e) => setEditCustomer({ ...editCustomer, phone: e.target.value })}
-                className="col-span-3"
+              
+              <FormField
+                control={editForm.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Phone</FormLabel>
+                      <FormControl>
+                        <Input {...field} className="col-span-3" />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="text-right mr-4" />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-address" className="text-right">
-                Address
-              </Label>
-              <Input
-                id="edit-address"
-                value={editCustomer.address}
-                onChange={(e) => setEditCustomer({ ...editCustomer, address: e.target.value })}
-                className="col-span-3"
+              
+              <FormField
+                control={editForm.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Address</FormLabel>
+                      <FormControl>
+                        <Input {...field} className="col-span-3" />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="text-right mr-4" />
+                  </FormItem>
+                )}
               />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" onClick={handleUpdateCustomer} disabled={updateCustomerMutation.isPending}>
-              {updateCustomerMutation.isPending ? "Updating..." : "Update Customer"}
-            </Button>
-          </DialogFooter>
+              
+              <FormField
+                control={editForm.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Status</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Select a status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <FormMessage className="text-right mr-4" />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button 
+                  type="submit" 
+                  disabled={updateCustomerMutation.isPending}
+                >
+                  {updateCustomerMutation.isPending ? "Updating..." : "Update Customer"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 
@@ -388,6 +541,35 @@ export default function Customers() {
           </Table>
         </div>
       )}
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete customer "{customerToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteCustomerMutation.isPending}
+            >
+              {deleteCustomerMutation.isPending ? (
+                <>
+                  <span className="mr-2">Deleting...</span>
+                  <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></span>
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
