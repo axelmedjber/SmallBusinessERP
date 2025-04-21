@@ -1,30 +1,24 @@
 import { useState } from 'react';
 import { useLanguage } from '@/hooks/use-language';
 import { useQuery } from '@tanstack/react-query';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, addMonths, subMonths, parseISO } from 'date-fns';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, MoreHorizontal, Edit, Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Toaster } from '@/components/ui/toaster';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import AppointmentDialog from '@/components/calendar/AppointmentDialog';
-
-// Define appointment type to match our database schema
-interface Appointment {
-  id: number;
-  title: string;
-  date: string; // YYYY-MM-DD
-  time: string; // HH:MM
-  duration: number;
-  description: string;
-  colorCode?: string;
-  createdAt?: string;
-}
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from '@/components/ui/tooltip';
+import AppointmentDialog, { Appointment } from '@/components/calendar/AppointmentDialog';
 
 const Calendar = () => {
   const { t } = useLanguage();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | undefined>(undefined);
+  const [dialogOpen, setDialogOpen] = useState(false);
   
   // Format year and month for the API query
   const yearMonth = format(currentMonth, 'yyyy-MM');
@@ -58,6 +52,18 @@ const Calendar = () => {
     });
   };
   
+  // Handle appointment click to open edit dialog
+  const handleAppointmentClick = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setDialogOpen(true);
+  };
+  
+  // Clear selected appointment when dialog closes
+  const handleDialogClose = () => {
+    setSelectedAppointment(undefined);
+    setDialogOpen(false);
+  };
+  
   // Format appointment time
   const formatAppointmentTime = (timeString: string) => {
     // Time is already in HH:MM format, so we need to parse it
@@ -70,19 +76,26 @@ const Calendar = () => {
   return (
     <div className="grid gap-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold text-gray-800">{t.appointments}</h2>
-        <AppointmentDialog />
+        <h2 className="text-2xl font-semibold">{t.appointments}</h2>
+        <AppointmentDialog 
+          trigger={
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              {t.addAppointment}
+            </Button>
+          }
+        />
       </div>
       
       <Card>
-        <CardHeader className="bg-white border-b">
+        <CardHeader className="border-b">
           <div className="flex justify-between items-center">
             <CardTitle>{format(currentMonth, 'MMMM yyyy')}</CardTitle>
             <div className="flex space-x-2">
-              <Button variant="outline" size="icon" onClick={prevMonth}>
+              <Button variant="outline" size="icon" onClick={prevMonth} className="bg-background">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" onClick={nextMonth}>
+              <Button variant="outline" size="icon" onClick={nextMonth} className="bg-background">
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -93,7 +106,7 @@ const Calendar = () => {
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
               <div
                 key={day}
-                className="p-2 text-center text-sm font-medium text-gray-500"
+                className="p-2 text-center text-sm font-medium text-muted-foreground"
               >
                 {day}
               </div>
@@ -104,7 +117,7 @@ const Calendar = () => {
             {Array.from({ length: monthStart.getDay() }).map((_, index) => (
               <div
                 key={`empty-start-${index}`}
-                className="p-2 min-h-[100px] bg-gray-50 border-b border-r"
+                className="p-2 min-h-[100px] bg-muted/20 border-b border-r"
               />
             ))}
             
@@ -115,13 +128,15 @@ const Calendar = () => {
                 <div
                   key={day.toISOString()}
                   className={`p-2 min-h-[100px] border-b border-r relative ${
-                    isToday(day) ? 'bg-blue-50' : ''
+                    isToday(day) 
+                      ? 'bg-blue-50 dark:bg-blue-900/30' 
+                      : 'hover:bg-muted/10 transition-colors'
                   }`}
                 >
                   <div className="flex justify-between items-start">
                     <span
                       className={`text-sm font-medium ${
-                        isToday(day) ? 'text-blue-600' : ''
+                        isToday(day) ? 'text-blue-600 dark:text-blue-400' : ''
                       }`}
                     >
                       {format(day, 'd')}
@@ -130,30 +145,25 @@ const Calendar = () => {
                   
                   <div className="mt-2 space-y-1">
                     {dayAppointments.slice(0, 3).map((appointment) => (
-                      <TooltipProvider key={appointment.id}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="bg-blue-100 text-blue-800 text-xs p-1 rounded truncate cursor-pointer">
-                              {formatAppointmentTime(appointment.time)}: {appointment.title}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <div className="space-y-1">
-                              <p className="font-medium">{appointment.title}</p>
-                              <p className="text-xs">
-                                {formatAppointmentTime(appointment.time)} ({appointment.duration} min)
-                              </p>
-                              {appointment.description && (
-                                <p className="text-xs">{appointment.description}</p>
-                              )}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <div
+                        key={appointment.id}
+                        onClick={() => handleAppointmentClick(appointment)}
+                        className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 
+                                 text-xs p-1 rounded truncate cursor-pointer hover:bg-blue-200 
+                                 dark:hover:bg-blue-800/50 transition-colors flex items-center"
+                      >
+                        <span className="flex-1 truncate">
+                          {formatAppointmentTime(appointment.time)}: {appointment.title}
+                        </span>
+                        <Edit className="h-3 w-3 ml-1 opacity-70" />
+                      </div>
                     ))}
                     
                     {dayAppointments.length > 3 && (
-                      <div className="text-xs text-gray-500 flex items-center">
+                      <div 
+                        className="text-xs text-muted-foreground flex items-center cursor-pointer
+                                hover:text-foreground transition-colors"
+                      >
                         <MoreHorizontal className="h-3 w-3 mr-1" />
                         {dayAppointments.length - 3} more
                       </div>
@@ -167,12 +177,20 @@ const Calendar = () => {
             {Array.from({ length: 6 - monthEnd.getDay() }).map((_, index) => (
               <div
                 key={`empty-end-${index}`}
-                className="p-2 min-h-[100px] bg-gray-50 border-b border-r"
+                className="p-2 min-h-[100px] bg-muted/20 border-b border-r"
               />
             ))}
           </div>
         </CardContent>
       </Card>
+      
+      {/* Edit Appointment Dialog */}
+      {dialogOpen && (
+        <AppointmentDialog
+          editAppointment={selectedAppointment}
+          onClose={handleDialogClose}
+        />
+      )}
       
       {/* Toaster component for notifications */}
       <Toaster />
