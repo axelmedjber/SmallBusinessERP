@@ -224,7 +224,9 @@ export default function Customers() {
     }
   };
 
-  const getStatusBadgeClass = (status: string) => {
+  const getStatusBadgeClass = (status: string | null) => {
+    if (!status) return "bg-gray-100 text-gray-800"; // Default for null status
+    
     switch (status) {
       case "active":
         return "bg-green-100 text-green-800";
@@ -276,7 +278,11 @@ export default function Customers() {
                         <div className="grid grid-cols-4 items-center gap-4">
                           <FormLabel className="text-right">Name</FormLabel>
                           <FormControl>
-                            <Input {...field} className="col-span-3" />
+                            <Input 
+                              {...field} 
+                              value={field.value || ''} 
+                              className="col-span-3" 
+                            />
                           </FormControl>
                         </div>
                         <FormMessage className="text-right mr-4" />
@@ -292,7 +298,12 @@ export default function Customers() {
                         <div className="grid grid-cols-4 items-center gap-4">
                           <FormLabel className="text-right">Email</FormLabel>
                           <FormControl>
-                            <Input type="email" {...field} className="col-span-3" />
+                            <Input 
+                              type="email" 
+                              {...field} 
+                              value={field.value || ''} 
+                              className="col-span-3" 
+                            />
                           </FormControl>
                         </div>
                         <FormMessage className="text-right mr-4" />
@@ -308,7 +319,11 @@ export default function Customers() {
                         <div className="grid grid-cols-4 items-center gap-4">
                           <FormLabel className="text-right">Phone</FormLabel>
                           <FormControl>
-                            <Input {...field} className="col-span-3" />
+                            <Input 
+                              {...field} 
+                              value={field.value || ''} 
+                              className="col-span-3" 
+                            />
                           </FormControl>
                         </div>
                         <FormMessage className="text-right mr-4" />
@@ -397,7 +412,11 @@ export default function Customers() {
                     <div className="grid grid-cols-4 items-center gap-4">
                       <FormLabel className="text-right">Name</FormLabel>
                       <FormControl>
-                        <Input {...field} className="col-span-3" />
+                        <Input 
+                          {...field} 
+                          value={field.value || ''} 
+                          className="col-span-3" 
+                        />
                       </FormControl>
                     </div>
                     <FormMessage className="text-right mr-4" />
@@ -413,7 +432,12 @@ export default function Customers() {
                     <div className="grid grid-cols-4 items-center gap-4">
                       <FormLabel className="text-right">Email</FormLabel>
                       <FormControl>
-                        <Input type="email" {...field} className="col-span-3" />
+                        <Input 
+                          type="email" 
+                          {...field} 
+                          value={field.value || ''} 
+                          className="col-span-3" 
+                        />
                       </FormControl>
                     </div>
                     <FormMessage className="text-right mr-4" />
@@ -429,7 +453,11 @@ export default function Customers() {
                     <div className="grid grid-cols-4 items-center gap-4">
                       <FormLabel className="text-right">Phone</FormLabel>
                       <FormControl>
-                        <Input {...field} className="col-span-3" />
+                        <Input 
+                          {...field} 
+                          value={field.value || ''} 
+                          className="col-span-3" 
+                        />
                       </FormControl>
                     </div>
                     <FormMessage className="text-right mr-4" />
@@ -466,7 +494,7 @@ export default function Customers() {
                       <FormLabel className="text-right">Status</FormLabel>
                       <Select 
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        defaultValue={field.value || 'active'}
                       >
                         <FormControl>
                           <SelectTrigger className="col-span-3">
@@ -525,7 +553,7 @@ export default function Customers() {
                   <TableCell>{customer.phone || "-"}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(customer.status)}`}>
-                      {customer.status}
+                      {customer.status || 'Unknown'}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
