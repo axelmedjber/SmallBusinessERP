@@ -59,7 +59,7 @@ import {
   InsertInvoice, 
   InsertInvoiceItem, 
   Customer, 
-  insertInvoiceSchema,
+  insertInvoiceSchema, 
   insertInvoiceItemSchema 
 } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
@@ -74,6 +74,7 @@ const invoiceFormSchema = insertInvoiceSchema.extend({
   taxRate: z.string().min(1, { message: "Tax rate is required" }),
   taxAmount: z.string().min(1, { message: "Tax amount is required" }),
   totalAmount: z.string().min(1, { message: "Total amount is required" }),
+  status: z.enum(["draft", "pending", "paid", "overdue", "cancelled"]),
 });
 
 const invoiceItemFormSchema = insertInvoiceItemSchema.extend({
@@ -95,7 +96,7 @@ export default function Invoices() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [invoiceItems, setInvoiceItems] = useState<any[]>([]);
-  const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [selectedStatus, setSelectedStatus] = useState<string>("draft");
   const [invoiceWithItems, setInvoiceWithItems] = useState<any | null>(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
@@ -125,36 +126,13 @@ export default function Invoices() {
       invoiceNumber: "",
       issueDate: "",
       dueDate: "",
-      status: "",
+      status: "draft",
       subtotal: "0",
       taxRate: "0",
       taxAmount: "0",
       totalAmount: "0",
       notes: "",
     },
-  });
-
-  // Form state
-  const [newInvoice, setNewInvoice] = useState<Partial<InsertInvoice>>({
-    customerId: 0,
-    invoiceNumber: `INV-${Math.floor(Math.random() * 10000)}`,
-    issueDate: new Date().toISOString().substring(0, 10),
-    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10),
-    status: "draft",
-    subtotal: "0",
-    taxRate: "10",
-    taxAmount: "0",
-    totalAmount: "0",
-    notes: "",
-  });
-
-  // Edit form state
-  const [editInvoice, setEditInvoice] = useState<Partial<InsertInvoice>>({
-    customerId: 0,
-    issueDate: "",
-    dueDate: "",
-    status: "",
-    notes: "",
   });
 
   // New item form state
@@ -361,7 +339,8 @@ export default function Invoices() {
 
     // Update invoice totals
     const subtotal = invoiceItems.reduce((sum, item) => sum + item.amount, 0) + amount;
-    const taxAmount = subtotal * 0.1; // 10% tax rate
+    const taxRate = parseFloat(createInvoiceForm.getValues("taxRate") || "10");
+    const taxAmount = subtotal * (taxRate / 100);
     const totalAmount = subtotal + taxAmount;
 
     // Update form values for the create form
@@ -377,7 +356,8 @@ export default function Invoices() {
 
     // Update invoice totals
     const subtotal = updatedItems.reduce((sum, item) => sum + item.amount, 0);
-    const taxAmount = subtotal * 0.1; // 10% tax rate
+    const taxRate = parseFloat(createInvoiceForm.getValues("taxRate") || "10");
+    const taxAmount = subtotal * (taxRate / 100);
     const totalAmount = subtotal + taxAmount;
 
     // Update form values for the create form
@@ -393,7 +373,7 @@ export default function Invoices() {
       invoiceNumber: invoice.invoiceNumber,
       issueDate: invoice.issueDate,
       dueDate: invoice.dueDate,
-      status: invoice.status as "draft" | "pending" | "paid" | "overdue" | "cancelled",
+      status: invoice.status,
       subtotal: invoice.subtotal,
       taxRate: invoice.taxRate,
       taxAmount: invoice.taxAmount,
@@ -437,7 +417,7 @@ export default function Invoices() {
   };
 
   const resetNewInvoiceForm = () => {
-    setNewInvoice({
+    createInvoiceForm.reset({
       customerId: 0,
       invoiceNumber: `INV-${Math.floor(Math.random() * 10000)}`,
       issueDate: new Date().toISOString().substring(0, 10),
@@ -482,11 +462,12 @@ export default function Invoices() {
   };
 
   // Format currency
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: string | number) => {
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(amount);
+    }).format(numAmount);
   };
 
   return (
@@ -517,169 +498,280 @@ export default function Invoices() {
                   Fill in the details to create a new invoice.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="customer">Customer</Label>
-                    <Select
-                      value={newInvoice.customerId?.toString()}
-                      onValueChange={(value) => setNewInvoice({ ...newInvoice, customerId: parseInt(value) })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a customer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {customers.map((customer) => (
-                          <SelectItem key={customer.id} value={customer.id.toString()}>
-                            {customer.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={newInvoice.status}
-                      onValueChange={(value) => setNewInvoice({ ...newInvoice, status: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="paid">Paid</SelectItem>
-                        <SelectItem value="overdue">Overdue</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="issueDate">Issue Date</Label>
-                    <Input
-                      id="issueDate"
-                      type="date"
-                      value={newInvoice.issueDate}
-                      onChange={(e) => setNewInvoice({ ...newInvoice, issueDate: e.target.value })}
+              <Form {...createInvoiceForm}>
+                <form onSubmit={createInvoiceForm.handleSubmit(onCreateSubmit)} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={createInvoiceForm.control}
+                      name="customerId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Customer</FormLabel>
+                          <Select
+                            value={field.value ? field.value.toString() : "0"}
+                            onValueChange={(value) => field.onChange(parseInt(value))}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a customer" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {customers.map((customer) => (
+                                <SelectItem key={customer.id} value={customer.id.toString()}>
+                                  {customer.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={createInvoiceForm.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status</FormLabel>
+                          <Select
+                            value={field.value}
+                            onValueChange={(value) => field.onChange(value as "draft" | "pending" | "paid" | "overdue" | "cancelled")}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="draft">Draft</SelectItem>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="paid">Paid</SelectItem>
+                              <SelectItem value="overdue">Overdue</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="dueDate">Due Date</Label>
-                    <Input
-                      id="dueDate"
-                      type="date"
-                      value={newInvoice.dueDate}
-                      onChange={(e) => setNewInvoice({ ...newInvoice, dueDate: e.target.value })}
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={createInvoiceForm.control}
+                      name="issueDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Issue Date</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={createInvoiceForm.control}
+                      name="dueDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Due Date</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
-                </div>
-                <div>
-                  <Label htmlFor="notes">Notes</Label>
-                  <Input
-                    id="notes"
-                    value={newInvoice.notes}
-                    onChange={(e) => setNewInvoice({ ...newInvoice, notes: e.target.value })}
+                  <FormField
+                    control={createInvoiceForm.control}
+                    name="invoiceNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Invoice Number</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="border p-3 rounded-md mt-4">
-                  <h3 className="font-medium mb-3">Invoice Items</h3>
-                  <div className="grid grid-cols-10 gap-3 mb-3">
-                    <div className="col-span-4">
-                      <Label htmlFor="description">Description</Label>
-                      <Input
-                        id="description"
-                        value={newItem.description}
-                        onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Label htmlFor="quantity">Quantity</Label>
-                      <Input
-                        id="quantity"
-                        type="number"
-                        value={newItem.quantity}
-                        onChange={(e) => setNewItem({ ...newItem, quantity: parseInt(e.target.value) })}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Label htmlFor="unitPrice">Unit Price</Label>
-                      <Input
-                        id="unitPrice"
-                        type="number"
-                        value={newItem.unitPrice}
-                        onChange={(e) => setNewItem({ ...newItem, unitPrice: parseFloat(e.target.value) })}
-                      />
-                    </div>
-                    <div className="col-span-2 flex items-end">
-                      <Button className="w-full" onClick={handleAddItem}>
-                        <Plus className="h-4 w-4 mr-2" /> Add Item
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="border rounded-md overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Description</TableHead>
-                          <TableHead className="text-right">Quantity</TableHead>
-                          <TableHead className="text-right">Unit Price</TableHead>
-                          <TableHead className="text-right">Amount</TableHead>
-                          <TableHead className="text-right w-[50px]"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {invoiceItems.map((item, index) => (
-                          <TableRow key={index}>
-                            <TableCell>{item.description}</TableCell>
-                            <TableCell className="text-right">{item.quantity}</TableCell>
-                            <TableCell className="text-right">${item.unitPrice.toFixed(2)}</TableCell>
-                            <TableCell className="text-right">${item.amount.toFixed(2)}</TableCell>
-                            <TableCell className="text-right">
-                              <Button variant="ghost" size="sm" onClick={() => handleRemoveItem(index)}>
-                                <X className="h-4 w-4 text-red-500" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                        {invoiceItems.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={5} className="h-16 text-center">
-                              No items added.
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                  <div className="mt-4 flex justify-end">
-                    <div className="w-64 space-y-2">
-                      <div className="flex justify-between">
-                        <span>Subtotal:</span>
-                        <span>${parseFloat(newInvoice.subtotal || "0").toFixed(2)}</span>
+                  <FormField
+                    control={createInvoiceForm.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Notes</FormLabel>
+                        <FormControl>
+                          <Input {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="border p-3 rounded-md">
+                    <h3 className="font-medium mb-3">Invoice Items</h3>
+                    <div className="grid grid-cols-10 gap-3 mb-3">
+                      <div className="col-span-4">
+                        <Label htmlFor="description">Description</Label>
+                        <Input
+                          id="description"
+                          value={newItem.description}
+                          onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                        />
                       </div>
-                      <div className="flex justify-between">
-                        <span>Tax ({newInvoice.taxRate || 10}%):</span>
-                        <span>${parseFloat(newInvoice.taxAmount || "0").toFixed(2)}</span>
+                      <div className="col-span-2">
+                        <Label htmlFor="quantity">Quantity</Label>
+                        <Input
+                          id="quantity"
+                          type="number"
+                          value={newItem.quantity}
+                          onChange={(e) => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) || 0 })}
+                        />
                       </div>
-                      <div className="flex justify-between font-bold">
-                        <span>Total:</span>
-                        <span>${parseFloat(newInvoice.totalAmount || "0").toFixed(2)}</span>
+                      <div className="col-span-2">
+                        <Label htmlFor="unitPrice">Unit Price</Label>
+                        <Input
+                          id="unitPrice"
+                          type="number"
+                          value={newItem.unitPrice}
+                          onChange={(e) => setNewItem({ ...newItem, unitPrice: parseFloat(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <div className="col-span-2 flex items-end">
+                        <Button type="button" className="w-full" onClick={handleAddItem}>
+                          <Plus className="h-4 w-4 mr-2" /> Add Item
+                        </Button>
                       </div>
                     </div>
+                    {invoiceItems.length > 0 && (
+                      <div className="border rounded-md overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Description</TableHead>
+                              <TableHead className="text-right">Quantity</TableHead>
+                              <TableHead className="text-right">Unit Price</TableHead>
+                              <TableHead className="text-right">Amount</TableHead>
+                              <TableHead className="text-right w-[50px]"></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {invoiceItems.map((item, index) => (
+                              <TableRow key={index}>
+                                <TableCell>{item.description}</TableCell>
+                                <TableCell className="text-right">{item.quantity}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(item.unitPrice)}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(item.amount)}</TableCell>
+                                <TableCell className="text-right">
+                                  <Button type="button" variant="ghost" size="sm" onClick={() => handleRemoveItem(index)}>
+                                    <X className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                    {invoiceItems.length === 0 && (
+                      <div className="border rounded-md p-4 text-center text-gray-500">
+                        No items added yet. Add an item using the form above.
+                      </div>
+                    )}
+                    <div className="mt-4 flex justify-end">
+                      <div className="w-64 space-y-2">
+                        <div className="flex justify-between">
+                          <span>Subtotal:</span>
+                          <span>{formatCurrency(createInvoiceForm.watch("subtotal") || "0")}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Tax Rate ({createInvoiceForm.watch("taxRate") || 10}%):</span>
+                          <span>{formatCurrency(createInvoiceForm.watch("taxAmount") || "0")}</span>
+                        </div>
+                        <div className="flex justify-between font-bold">
+                          <span>Total:</span>
+                          <span>{formatCurrency(createInvoiceForm.watch("totalAmount") || "0")}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" onClick={handleCreateInvoice} disabled={createInvoiceMutation.isPending}>
-                  {createInvoiceMutation.isPending ? "Creating..." : "Create Invoice"}
-                </Button>
-              </DialogFooter>
+                  <DialogFooter>
+                    <Button type="submit" disabled={createInvoiceMutation.isPending || invoiceItems.length === 0}>
+                      {createInvoiceMutation.isPending ? "Creating..." : "Create Invoice"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
             </DialogContent>
           </Dialog>
         </div>
+      </div>
+
+      {/* Invoice Table */}
+      <div className="bg-background rounded-md shadow">
+        {isInvoicesLoading ? (
+          <div className="p-8 flex justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : filteredInvoices.length === 0 ? (
+          <div className="p-8 text-center">
+            {searchQuery ? "No invoices match your search." : "No invoices yet. Create your first invoice!"}
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[100px]">ID</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Invoice #</TableHead>
+                <TableHead>Issue Date</TableHead>
+                <TableHead>Due Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredInvoices.map((invoice) => (
+                <TableRow key={invoice.id}>
+                  <TableCell className="font-medium">{invoice.id}</TableCell>
+                  <TableCell>{getCustomerName(invoice.customerId)}</TableCell>
+                  <TableCell>{invoice.invoiceNumber}</TableCell>
+                  <TableCell>{format(new Date(invoice.issueDate), 'PP')}</TableCell>
+                  <TableCell>{format(new Date(invoice.dueDate), 'PP')}</TableCell>
+                  <TableCell>
+                    <Badge className={getStatusBadgeClass(invoice.status)}>
+                      {invoice.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">{formatCurrency(invoice.totalAmount)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => handleViewClick(invoice)}>
+                        <Eye className="h-4 w-4" />
+                        <span className="sr-only">View</span>
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleChangeStatusClick(invoice)}>
+                        <CreditCard className="h-4 w-4" />
+                        <span className="sr-only">Change Status</span>
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleEditClick(invoice)}>
+                        <Edit className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(invoice)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       {/* Edit Invoice Dialog */}
@@ -691,59 +783,83 @@ export default function Invoices() {
               Update invoice information.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div>
-              <Label htmlFor="edit-customer">Customer</Label>
-              <Select
-                value={editInvoice.customerId?.toString()}
-                onValueChange={(value) => setEditInvoice({ ...editInvoice, customerId: parseInt(value) })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a customer" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id.toString()}>
-                      {customer.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-issueDate">Issue Date</Label>
-                <Input
-                  id="edit-issueDate"
-                  type="date"
-                  value={editInvoice.issueDate}
-                  onChange={(e) => setEditInvoice({ ...editInvoice, issueDate: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-dueDate">Due Date</Label>
-                <Input
-                  id="edit-dueDate"
-                  type="date"
-                  value={editInvoice.dueDate}
-                  onChange={(e) => setEditInvoice({ ...editInvoice, dueDate: e.target.value })}
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="edit-notes">Notes</Label>
-              <Input
-                id="edit-notes"
-                value={editInvoice.notes}
-                onChange={(e) => setEditInvoice({ ...editInvoice, notes: e.target.value })}
+          <Form {...editInvoiceForm}>
+            <form onSubmit={editInvoiceForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <FormField
+                control={editInvoiceForm.control}
+                name="customerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Customer</FormLabel>
+                    <Select
+                      value={field.value ? field.value.toString() : "0"}
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a customer" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {customers.map((customer) => (
+                          <SelectItem key={customer.id} value={customer.id.toString()}>
+                            {customer.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" onClick={handleUpdateInvoice} disabled={updateInvoiceMutation.isPending}>
-              {updateInvoiceMutation.isPending ? "Updating..." : "Update Invoice"}
-            </Button>
-          </DialogFooter>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editInvoiceForm.control}
+                  name="issueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Issue Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editInvoiceForm.control}
+                  name="dueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Due Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={editInvoiceForm.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit" disabled={updateInvoiceMutation.isPending}>
+                  {updateInvoiceMutation.isPending ? "Updating..." : "Update Invoice"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 
@@ -753,177 +869,58 @@ export default function Invoices() {
           <DialogHeader>
             <DialogTitle>Change Invoice Status</DialogTitle>
             <DialogDescription>
-              Update the status of invoice #{selectedInvoice?.id}.
+              Update the status of this invoice.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="overdue">Overdue</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={selectedStatus}
+                onValueChange={setSelectedStatus}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="overdue">Overdue</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
-            <Button type="submit" onClick={handleUpdateStatus} disabled={updateStatusMutation.isPending}>
+            <Button onClick={handleUpdateStatus} disabled={updateStatusMutation.isPending}>
               {updateStatusMutation.isPending ? "Updating..." : "Update Status"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* View Invoice Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Invoice #{invoiceWithItems?.invoice?.id}</DialogTitle>
-            <DialogDescription>
-              Invoice details and line items.
-            </DialogDescription>
-          </DialogHeader>
-          {invoiceWithItems && (
-            <div className="py-4">
-              <div className="border-b pb-4 mb-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Customer</p>
-                    <p className="font-medium">{getCustomerName(invoiceWithItems.invoice.customerId)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Status</p>
-                    <Badge className={getStatusBadgeClass(invoiceWithItems.invoice.status)}>
-                      {invoiceWithItems.invoice.status}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Issue Date</p>
-                    <p>{format(new Date(invoiceWithItems.invoice.issueDate), "MMM d, yyyy")}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Due Date</p>
-                    <p>{format(new Date(invoiceWithItems.invoice.dueDate), "MMM d, yyyy")}</p>
-                  </div>
-                </div>
-                {invoiceWithItems.invoice.notes && (
-                  <div className="mt-4">
-                    <p className="text-sm text-gray-500">Notes</p>
-                    <p>{invoiceWithItems.invoice.notes}</p>
-                  </div>
-                )}
-              </div>
-              <div>
-                <h3 className="font-medium mb-3">Invoice Items</h3>
-                <div className="border rounded-md overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="text-right">Quantity</TableHead>
-                        <TableHead className="text-right">Unit Price</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {invoiceWithItems.items.map((item: any) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{item.description}</TableCell>
-                          <TableCell className="text-right">{item.quantity}</TableCell>
-                          <TableCell className="text-right">${item.unitPrice.toFixed(2)}</TableCell>
-                          <TableCell className="text-right">${item.amount.toFixed(2)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <div className="w-64 space-y-2">
-                    <div className="flex justify-between">
-                      <span>Subtotal:</span>
-                      <span>${parseFloat(invoiceWithItems.invoice.subtotal || "0").toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Tax ({invoiceWithItems.invoice.taxRate || 10}%):</span>
-                      <span>${parseFloat(invoiceWithItems.invoice.taxAmount || "0").toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between font-bold">
-                      <span>Total:</span>
-                      <span>${parseFloat(invoiceWithItems.invoice.totalAmount || "0").toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {isInvoicesLoading || isCustomersLoading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow overflow-x-auto">
-          <Table>
-            <TableCaption>A list of all invoices.</TableCaption>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[80px]">ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Issue Date</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredInvoices.map((invoice) => (
-                <TableRow key={invoice.id}>
-                  <TableCell className="font-medium">{invoice.id}</TableCell>
-                  <TableCell>{getCustomerName(invoice.customerId)}</TableCell>
-                  <TableCell>{format(new Date(invoice.issueDate), "MMM d, yyyy")}</TableCell>
-                  <TableCell>{format(new Date(invoice.dueDate), "MMM d, yyyy")}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusBadgeClass(invoice.status)}>
-                      {invoice.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">${parseFloat(invoice.totalAmount || "0").toFixed(2)}</TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <Button variant="ghost" size="sm" onClick={() => handleViewClick(invoice)}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleChangeStatusClick(invoice)}>
-                      <CreditCard className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleEditClick(invoice)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(invoice)}>
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredInvoices.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    No invoices found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this invoice? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+              disabled={deleteInvoiceMutation.isPending}
+            >
+              {deleteInvoiceMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
