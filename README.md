@@ -64,8 +64,8 @@ A comprehensive Enterprise Resource Planning (ERP) system designed specifically 
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/small-business-erp.git
-   cd small-business-erp
+   git clone https://github.com/axelmedjber/SmallBusinessERP.git
+   cd SmallBusinessERP
    ```
 
 2. Install dependencies:
