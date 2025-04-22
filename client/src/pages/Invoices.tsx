@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -27,14 +30,60 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Edit, Trash2, FileText, Search, CreditCard, X, Eye, Plus } from "lucide-react";
 import { useLanguage } from "@/hooks/use-language";
 import { format } from "date-fns";
-import { Invoice, InsertInvoice, InsertInvoiceItem, Customer } from "@shared/schema";
+import { 
+  Invoice, 
+  InsertInvoice, 
+  InsertInvoiceItem, 
+  Customer, 
+  insertInvoiceSchema,
+  insertInvoiceItemSchema 
+} from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
+
+// Create extended validation schemas with additional validation rules
+const invoiceFormSchema = insertInvoiceSchema.extend({
+  customerId: z.number().min(1, { message: "Please select a customer" }),
+  invoiceNumber: z.string().min(1, { message: "Invoice number is required" }),
+  issueDate: z.string().min(1, { message: "Issue date is required" }),
+  dueDate: z.string().min(1, { message: "Due date is required" }),
+  subtotal: z.string().min(1, { message: "Subtotal is required" }),
+  taxRate: z.string().min(1, { message: "Tax rate is required" }),
+  taxAmount: z.string().min(1, { message: "Tax amount is required" }),
+  totalAmount: z.string().min(1, { message: "Total amount is required" }),
+});
+
+const invoiceItemFormSchema = insertInvoiceItemSchema.extend({
+  description: z.string().min(1, { message: "Description is required" }),
+  quantity: z.number().min(0.01, { message: "Quantity must be greater than 0" }),
+  unitPrice: z.number().min(0.01, { message: "Unit price must be greater than 0" }),
+});
+
+type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
+type InvoiceItemFormValues = z.infer<typeof invoiceItemFormSchema>;
 
 export default function Invoices() {
   const { t } = useLanguage();
@@ -48,6 +97,42 @@ export default function Invoices() {
   const [invoiceItems, setInvoiceItems] = useState<any[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [invoiceWithItems, setInvoiceWithItems] = useState<any | null>(null);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
+  
+  // Create invoice form with validation
+  const createInvoiceForm = useForm<InvoiceFormValues>({
+    resolver: zodResolver(invoiceFormSchema),
+    defaultValues: {
+      customerId: 0,
+      invoiceNumber: `INV-${Math.floor(Math.random() * 10000)}`,
+      issueDate: new Date().toISOString().substring(0, 10),
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10),
+      status: "draft",
+      subtotal: "0",
+      taxRate: "10",
+      taxAmount: "0",
+      totalAmount: "0",
+      notes: "",
+    },
+  });
+  
+  // Edit invoice form with validation
+  const editInvoiceForm = useForm<InvoiceFormValues>({
+    resolver: zodResolver(invoiceFormSchema),
+    defaultValues: {
+      customerId: 0,
+      invoiceNumber: "",
+      issueDate: "",
+      dueDate: "",
+      status: "",
+      subtotal: "0",
+      taxRate: "0",
+      taxAmount: "0",
+      totalAmount: "0",
+      notes: "",
+    },
+  });
 
   // Form state
   const [newInvoice, setNewInvoice] = useState<Partial<InsertInvoice>>({
@@ -233,16 +318,16 @@ export default function Invoices() {
   };
 
   // Handlers
-  const handleCreateInvoice = () => {
+  const onCreateSubmit = (data: InvoiceFormValues) => {
     createInvoiceMutation.mutate({
-      invoiceData: newInvoice,
+      invoiceData: data,
       items: invoiceItems,
     });
   };
 
-  const handleUpdateInvoice = () => {
+  const onEditSubmit = (data: InvoiceFormValues) => {
     if (!selectedInvoice) return;
-    updateInvoiceMutation.mutate({ id: selectedInvoice.id, data: editInvoice });
+    updateInvoiceMutation.mutate({ id: selectedInvoice.id, data });
   };
 
   const handleUpdateStatus = () => {
@@ -279,16 +364,13 @@ export default function Invoices() {
     const taxAmount = subtotal * 0.1; // 10% tax rate
     const totalAmount = subtotal + taxAmount;
 
-    setNewInvoice({
-      ...newInvoice,
-      subtotal: subtotal.toString(),
-      taxAmount: taxAmount.toString(),
-      totalAmount: totalAmount.toString(),
-    });
+    // Update form values for the create form
+    createInvoiceForm.setValue("subtotal", subtotal.toString());
+    createInvoiceForm.setValue("taxAmount", taxAmount.toString());
+    createInvoiceForm.setValue("totalAmount", totalAmount.toString());
   };
 
   const handleRemoveItem = (index: number) => {
-    const removedItem = invoiceItems[index];
     const updatedItems = invoiceItems.filter((_, i) => i !== index);
     
     setInvoiceItems(updatedItems);
@@ -298,20 +380,24 @@ export default function Invoices() {
     const taxAmount = subtotal * 0.1; // 10% tax rate
     const totalAmount = subtotal + taxAmount;
 
-    setNewInvoice({
-      ...newInvoice,
-      subtotal: subtotal.toString(),
-      taxAmount: taxAmount.toString(),
-      totalAmount: totalAmount.toString(),
-    });
+    // Update form values for the create form
+    createInvoiceForm.setValue("subtotal", subtotal.toString());
+    createInvoiceForm.setValue("taxAmount", taxAmount.toString());
+    createInvoiceForm.setValue("totalAmount", totalAmount.toString());
   };
 
   const handleEditClick = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
-    setEditInvoice({
+    editInvoiceForm.reset({
       customerId: invoice.customerId,
+      invoiceNumber: invoice.invoiceNumber,
       issueDate: invoice.issueDate,
       dueDate: invoice.dueDate,
+      status: invoice.status as "draft" | "pending" | "paid" | "overdue" | "cancelled",
+      subtotal: invoice.subtotal,
+      taxRate: invoice.taxRate,
+      taxAmount: invoice.taxAmount,
+      totalAmount: invoice.totalAmount,
       notes: invoice.notes || "",
     });
     setIsEditDialogOpen(true);
@@ -338,8 +424,15 @@ export default function Invoices() {
   };
 
   const handleDeleteClick = (invoice: Invoice) => {
-    if (window.confirm(`Are you sure you want to delete invoice #${invoice.id}?`)) {
-      deleteInvoiceMutation.mutate(invoice.id);
+    setInvoiceToDelete(invoice);
+    setIsDeleteAlertOpen(true);
+  };
+  
+  const confirmDelete = () => {
+    if (invoiceToDelete) {
+      deleteInvoiceMutation.mutate(invoiceToDelete.id);
+      setIsDeleteAlertOpen(false);
+      setInvoiceToDelete(null);
     }
   };
 
